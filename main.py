@@ -28,6 +28,7 @@ first_pointB = False
 second_pointB = False
 first_point = (0, 0)
 second_point = (0, 0)
+point_counter = 0
 
 
 tello = Tello()
@@ -43,28 +44,31 @@ except:
 
 # Mouse callback function
 def onMouse(event, x, y, flags, param):
-    global tracker, tracking, bbox
+    global tracker, tracking, bbox, point_counter, first_point, second_point
 
     if event == cv2.EVENT_LBUTTONDOWN:
-
-        if tracking:
-            first_pointB = False
-            second_pointB = False
-            tracking = False
         
-        if ~first_pointB:
-            first_pointB = True
+        if point_counter == 0:
+            print("first point set to ", x, y)
             first_point = (x, y)
             
-        elif ~second_pointB:
-            second_pointB = True
+        if point_counter == 1:
+            print("second point set to ", x, y)
             second_point = (x, y)
+        
+        point_counter += 1
+        
+        if tracking and point_counter == 3:
+            point_counter = 0
+            tracking = False
+            print("reset")
 
-        if first_pointB and second_pointB:
+        if point_counter == 2:
             bbox = (first_point[0], first_point[1], second_point[0], second_point[1])
             tracker = cv2.legacy.TrackerCSRT_create()
             tracker.init(empty_frame, bbox)
             tracking = True
+            
 
 cv2.namedWindow("FEED", cv2.WINDOW_NORMAL)
 cv2.setMouseCallback("FEED", onMouse)
@@ -74,7 +78,7 @@ while True:
     try:
         frame = frame_read.frame
         empty_frame = frame.copy()
-        empty_frame = cv2.cvtColor(empty_frame, cv2.COLOR_BGR2RBG)
+        empty_frame = cv2.cvtColor(empty_frame, cv2.COLOR_BGR2RGB)
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
         # top left
@@ -137,19 +141,18 @@ while True:
 
                 tracking = False
 
-
-
-
     except:
         print("[FEED] - UI Error")
 
     try:
         cv2.imshow("FEED", frame)
     except:
-        print("[FEED] - Frame Display Error")
+        tello.streamoff()
+        tello.end()
 
     if (cv2.waitKey(1) & 0xff) == 27:
         break
 
 cv2.destroyAllWindows()
+tello.streamoff()
 tello.end()
