@@ -84,7 +84,7 @@ while True:
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
         relative_alt = (tello.get_barometer() - init_alt) * 0.0328
-        spd_mag = math.sqrt(tello.get_speed_x() ** 2 + tello.get_speed_y() ** 2 + tello.get_speed_z() ** 2)
+        spd_mag = int(math.sqrt(tello.get_speed_x() ** 2 + tello.get_speed_y() ** 2 + tello.get_speed_z() ** 2))
 
         # top left
         cv2.putText(frame, "BAT   {}%".format(tello.get_battery()), (5, 25), font, font_scale, white, line_type)
