@@ -8,6 +8,8 @@ import cv2, math, time, threading
 import numpy as np
 
 init_alt = 0
+relative_alt = 0
+spd_mag = 0
 
 width = 960
 height = 720
@@ -81,6 +83,9 @@ while True:
         empty_frame = cv2.cvtColor(empty_frame, cv2.COLOR_BGR2RGB)
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
+        relative_alt = (tello.get_barometer() - init_alt) * 0.0328
+        spd_mag = math.sqrt(tello.get_speed_x() ** 2 + tello.get_speed_y() ** 2 + tello.get_speed_z() ** 2)
+
         # top left
         cv2.putText(frame, "BAT   {}%".format(tello.get_battery()), (5, 25), font, font_scale, white, line_type)
         cv2.putText(frame, "TEMP  {} C".format(tello.get_temperature()), (5, 55), font, font_scale, white, line_type)
@@ -93,13 +98,17 @@ while True:
 
         #crosshair stats
         spd_size = cv2.getTextSize("SPD  0", font, font_scale, line_type)[0][0]
-        cv2.putText(frame, "SPD  {}".format(abs(tello.get_speed_x())), ((width // 2) - 90 - spd_size, (height // 2) - 100), font, font_scale, white, line_type)
-        cv2.putText(frame, "ALT  {:.1f}".format((tello.get_barometer() - init_alt) * 0.0328), ((width // 2) + 90, (height // 2) - 100), font, font_scale, white, line_type)
+        cv2.putText(frame, "SPD  {}".format(abs(spd_mag)), ((width // 2) - 90 - spd_size, (height // 2) - 100), font, font_scale, white, line_type)
+        cv2.putText(frame, "ALT  {:.1f} FT".format(relative_alt), ((width // 2) + 90, (height // 2) - 100), font, font_scale, white, line_type)
 
         # bottom left telemtry
-        cv2.putText(frame, "VRT SPD  {}".format(tello.get_speed_z()), (5, height - 70), font, font_scale, white, line_type)
-        cv2.putText(frame, "HRZ SPD  {}".format(tello.get_speed_y()), (5, height - 40), font, font_scale, white, line_type)
+        cv2.putText(frame, "SPD  {}  {}  {}".format(tello.get_speed_x(), tello.get_speed_y(), tello.get_speed_z()), (5, height - 70), font, font_scale, white, line_type)
+        cv2.putText(frame, "ACC  {}  {}  {}".format(tello.get_acceleration_x(), tello.get_acceleration_y(), tello.get_acceleration_z()), (5, height - 40), font, font_scale, white, line_type)
         cv2.putText(frame, "YPR  {}  {}  {}".format(tello.get_pitch(), tello.get_roll(), tello.get_height()), (5, height - 10), font, font_scale, white, line_type)
+
+        # top right
+        time_size = cv2.getTextSize("T + {}".format(tello.get_flight_time()), font, font_scale, line_type)[0][0]
+        cv2.putText(frame, "T + {}".format(tello.get_flight_time()), (width - time_size, 25), font, font_scale, white, line_type)
 
         # top center
         if (manual_control):
