@@ -1,0 +1,12 @@
+                # top left
+            #cv2.line(frame, (x, y), (x + 50, y), white, 1)
+            #cv2.line(frame, (x, y), (x, y + 50), white, 1)
+                # top right
+            #cv2.line(frame, (x + w, y), (x + w - 50, y), white, 1)
+            #cv2.line(frame, (x + w, y), (x + w, y + 50), white, 1)
+                # bottom left
+            #cv2.line(frame, (x, y + h), (x + 50, y + h), white, 1)
+            #cv2.line(frame, (x, y + h), (x, y + h - 50), white, 1)
+                # bottom right
+            #cv2.line(frame, (x + w, y + h), (x + w - 50, y + h), white, 1)
+            #cv2.line(frame, (x + w, y + h), (x + w, y + h - 50), white, 1)
