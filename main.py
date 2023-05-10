@@ -1,10 +1,10 @@
 # todo
 # - implement auto flight control (homing)
-# - implment manual flight control
 
 from djitellopy import Tello
 import cv2, math, time, threading
 import numpy as np
+from pynput import keyboard
 
 prev_frame_time = 0
 new_frame_time = 0
@@ -49,6 +49,32 @@ try:
 except:
     print("[FEED] - No Feed Signal")
 
+
+def on_press(key):
+    try:
+        if key.char == 'i':
+            tello.takeoff()
+        elif key.char == 'k':
+            tello.land()
+        elif key.char == 'w':
+            tello.move_forward(30)
+        elif key.char == 'a':
+            tello.move_left(30)
+        elif key.char == 'd':
+            tello.move_right(30)
+        elif key.char == 's':
+            tello.move_back(30)
+
+    except:
+        print("[MANL CTRL] - Invalid Key Input")
+
+def on_release(key):
+    if key == keyboard.Key.esc:
+        return False 
+
+key_listener = keyboard.Listener(on_press=on_press, on_release=on_release)
+key_listener.start()
+
 def onMouse(event, x, y, flags, param):
     global tracker, tracking, bbox, point_counter, first_point, second_point, reset_track
 
@@ -78,13 +104,14 @@ def onMouse(event, x, y, flags, param):
             tracking = True
 
 def run_tracker():
-    global tracking, empty_frame, tracker, draw_bbox, tracker_ret, thread_init, reset_track
+    global tracking, empty_frame, tracker, draw_bbox, tracker_ret, thread_init, reset_track, point_counter
     lock.acquire()
     thread_init = True
     while tracking:
         tracker_ret, draw_bbox = tracker.update(empty_frame)
         if tracker_ret == False or reset_track:
             tracking = False
+            point_counter = 0
 
     thread_init = False
     tracker_thread = None
@@ -185,8 +212,10 @@ while True:
     if (cv2.waitKey(1) & 0xff) == 27:        
         if tracker_thread:
             tracker_thread.join()
+            key_listener.join()
         break
 
+key_listener.join()
 cv2.destroyAllWindows()
 tello.streamoff()
 tello.end()
