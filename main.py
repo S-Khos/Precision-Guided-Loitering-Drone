@@ -52,8 +52,6 @@ except:
 def onMouse(event, x, y, flags, param):
     global tracker, tracking, bbox, point_counter, first_point, second_point, reset_track
 
-    print("MOUSE CALLED")
-
     if event == cv2.EVENT_LBUTTONDOWN:
         if point_counter == 0:
             print("first point set to ", x, y)
@@ -126,7 +124,7 @@ while True:
         cv2.putText(frame, "ACC  {}  {}  {}".format(tello.get_acceleration_x(), tello.get_acceleration_y(), tello.get_acceleration_z()), (5, height - 40), font, font_scale, white, line_type)
         cv2.putText(frame, "YPR  {}  {}  {}".format(tello.get_pitch(), tello.get_roll(), tello.get_height()), (5, height - 10), font, font_scale, white, line_type)
 
-        # top right
+        # top right (fps)
         new_frame_time = time.time()
         fps = 1/(new_frame_time-prev_frame_time)
         prev_frame_time = new_frame_time
@@ -174,12 +172,10 @@ while True:
             cv2.line(frame, (x + w, y + h), (x + w - 50, y + h), white, 1)
             cv2.line(frame, (x + w, y + h), (x + w, y + h - 50), white, 1)
 
-
     except Exception as error:
         print("[FEED] - UI ERROR -", error)
         if tracker_thread:
             tracker_thread.join()
-
     try:
         cv2.imshow("FEED", frame)
     except:
