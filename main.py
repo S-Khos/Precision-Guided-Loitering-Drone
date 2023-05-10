@@ -3,9 +3,6 @@ import cv2, math, time, threading
 import numpy as np
 from pynput import keyboard
 
-prev_frame_time = 0
-new_frame_time = 0
-
 init_alt = 0
 relative_alt = 0
 spd_mag = 0
@@ -24,7 +21,6 @@ line_type = 1
 manual_control = True
 empty_frame = None
 
-tracker = cv2.legacy.TrackerCSRT_create()
 lock = threading.Lock()
 thread_init = False
 reset_track = False
@@ -32,13 +28,14 @@ tracker_thread = None
 tracking = False
 roi = None
 tracker_ret = False
-first_point = (0, 0)
-second_point = (0, 0)
+first_point = None
+second_point = None
 point_counter = 0
 
 tello = Tello()
+
 try:
-    tello.connect()
+    tello.connect()    
 except:
     print("[TELLO] - Connection Error")
 
@@ -85,20 +82,24 @@ def onMouse(event, x, y, flags, param):
     global tracker, tracking, point_counter, first_point, second_point, reset_track
     if event == cv2.EVENT_LBUTTONDOWN:
         if point_counter == 0:
-            print("[TRACK] - P1: ({})".format(x, ', ', y))
+            print("[TRACK] - P1: ({}, {})".format(x,y))
             first_point = (x, y)
-        if point_counter == 1:
-            print("[TRACK] - P2: ({})".format(x, ', ', y))
+            point_counter += 1
+        if point_counter == 1 and (x,y) != first_point:
+            print("[TRACK] - P2: ({}, {})".format(x,y))
             second_point = (x, y)
-        point_counter += 1
-        if tracking and point_counter == 3:
+            point_counter += 1
+        if tracking and point_counter == 2:
             point_counter = 0
+            first_point = None
+            second_point = None
             tracking = False
             reset_track = True
             print("[TRACK] - ROI RESET")
         if point_counter == 2:
             reset_track = False
-            tracker.init(empty_frame, (first_point[0], first_point[1], second_point[0], second_point[1]))
+            tracker = cv2.legacy.TrackerCSRT_create()
+            tracker.init(empty_frame, (first_point[0], first_point[1], abs(second_point[0] - first_point[0]), abs(second_point[1] - first_point[1])))
             tracking = True
 
 def run_tracker():
@@ -110,7 +111,7 @@ def run_tracker():
         if tracker_ret == False or reset_track:
             tracking = False
             point_counter = 0
-        time.sleep(0.1)
+        time.sleep(0.05)
 
     thread_init = False
     tracker_thread = None
@@ -127,6 +128,7 @@ key_listener.start()
 while True:
     try:
         frame = frame_read.frame
+        timer = cv2.getTickCount()
         empty_frame = frame.copy()
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
@@ -158,9 +160,7 @@ while True:
         cv2.putText(frame, "DIST  {}  {}  {}".format(default_dist, default_dist, default_dist), (width - dist_size -5, height - 10), font, font_scale, white, line_type)
 
         # top right (fps)
-        new_frame_time = time.time()
-        fps = 1/(new_frame_time-prev_frame_time)
-        prev_frame_time = new_frame_time
+        fps = 1 / (cv2.getTickCount() - timer) / cv2.getTickFrequency()
         fps_size = cv2.getTextSize("FPS  {}".format(str(int(fps))), font, font_scale, line_type)[0][0]
         cv2.putText(frame, "FPS  {}".format(str(int(fps))), (width - fps_size - 5, 25), font, font_scale, white, line_type)
 
@@ -192,16 +192,16 @@ while True:
         if tracker_ret and tracking:
             x, y, w, h = [int(value) for value in roi]
             cv2.rectangle(frame, (x, y), (x + w, y + h), white, 1)
-            cv2.line(frame, (x + w // 2, y), (x + w // 2, y - 70), white, 1)
-            cv2.line(frame, (x, y + h // 2), (x - 70, y + h // 2), white, 1)
-            cv2.line(frame, (x + w, y + h // 2), (x + w + 70, y + h // 2), white, 1)
-            cv2.line(frame, (x + w // 2, y + h), (x + w // 2, y + h + 70), white, 1)
+            cv2.line(frame, (x + w // 2, y), (x + w // 2, y - (y + h // 2) // 2), white, 1)
+            cv2.line(frame, (x, y + h // 2), (x - (x + w // 2) // 2, y + h // 2), white, 1)
+            cv2.line(frame, (x + w, y + h // 2), (x + w + (x + w // 2) // 2, y + h // 2), white, 1)
+            cv2.line(frame, (x + w // 2, y + h), (x + w // 2, y + h + (y + h // 2) // 2), white, 1)
 
     except Exception as error:
         print("[FEED] - UI Error\n", error)
     try:
         cv2.imshow("FEED", frame)
-    except:
+    except Exception as error:
         print("[FEED] - Display Error\n", error)
         key_listener.join()
         tello.streamoff()
