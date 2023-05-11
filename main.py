@@ -72,7 +72,7 @@ def on_press(key):
             elif key.char == 'down':
                 tello.move_down(default_dist)
         except:
-            print("[MANL CTRL] - Invalid key input")
+            print("[MNUL CTRL] - Invalid key input")
 
 def on_release(key):
     if key == keyboard.Key.esc:
@@ -160,7 +160,7 @@ while True:
         cv2.putText(frame, "DIST  {}  {}  {}".format(default_dist, default_dist, default_dist), (width - dist_size -5, height - 10), font, font_scale, white, line_type)
 
         # top right (fps)
-        fps = 1 / (cv2.getTickCount() - timer) / cv2.getTickFrequency()
+        fps = (1 / (cv2.getTickCount() - timer) / cv2.getTickFrequency()) * 100
         fps_size = cv2.getTextSize("FPS  {}".format(str(int(fps))), font, font_scale, line_type)[0][0]
         cv2.putText(frame, "FPS  {}".format(str(int(fps))), (width - fps_size - 5, 25), font, font_scale, white, line_type)
 
@@ -170,7 +170,7 @@ while True:
         # top center
         if (manual_control):
             cv2.rectangle(frame, (width//2 - 20, 10), (width//2 + 30, 28), white, -1)
-            cv2.putText(frame, "MANL", (width//2 - 20, 25), font, font_scale, black, line_type)
+            cv2.putText(frame, "CTRL", (width//2 - 20, 25), font, font_scale, black, line_type)
         else:
             cv2.rectangle(frame, (width//2 - 20, 10), (width//2 + 30, 28), white, -1)
             cv2.putText(frame, "AUTO", (width//2 - 20, 25), font, font_scale, black, line_type)
@@ -192,10 +192,10 @@ while True:
         if tracker_ret and tracking:
             x, y, w, h = [int(value) for value in roi]
             cv2.rectangle(frame, (x, y), (x + w, y + h), white, 1)
-            cv2.line(frame, (x + w // 2, y), (x + w // 2, y - (y + h // 2) // 2), white, 1)
-            cv2.line(frame, (x, y + h // 2), (x - (x + w // 2) // 2, y + h // 2), white, 1)
-            cv2.line(frame, (x + w, y + h // 2), (x + w + (x + w // 2) // 2, y + h // 2), white, 1)
-            cv2.line(frame, (x + w // 2, y + h), (x + w // 2, y + h + (y + h // 2) // 2), white, 1)
+            cv2.line(frame, (x + w // 2, y + (y + h // 2) - 20), (x + w // 2, y - 20), white, 1)
+            cv2.line(frame, ((x + w // 2) - 20, y + h // 2), (x - 20, y + h // 2), white, 1)
+            cv2.line(frame, (x + w // 2 + 20, y + h // 2), (x + w + 20, y + h // 2), white, 1)
+            cv2.line(frame, (x + w // 2, y + h // 2 - 20), (x + w // 2, y + h + 20), white, 1)
 
     except Exception as error:
         print("[FEED] - UI Error\n", error)
