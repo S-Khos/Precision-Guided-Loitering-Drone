@@ -10,6 +10,7 @@ default_dist = 50
 
 width = 960
 height = 720
+start_time = time.time()
 font = cv2.FONT_HERSHEY_DUPLEX
 font_scale = .6
 red = (0, 0, 255)
@@ -31,6 +32,9 @@ tracker_ret = False
 first_point = None
 second_point = None
 point_counter = 0
+
+x_angle = 0
+y_angle = 0
 
 tello = Tello()
 
@@ -111,7 +115,7 @@ def run_tracker():
         if tracker_ret == False or reset_track:
             tracking = False
             point_counter = 0
-        time.sleep(0.05)
+        time.sleep(0.01)
 
     thread_init = False
     tracker_thread = None
@@ -160,7 +164,8 @@ while True:
         cv2.putText(frame, "DIST  {}  {}  {}".format(default_dist, default_dist, default_dist), (width - dist_size -5, height - 10), font, font_scale, white, line_type)
 
         # top right (fps)
-        fps = (1 / (cv2.getTickCount() - timer) / cv2.getTickFrequency()) * 100
+        elapsed_time = time.time() - start_time
+        fps = 1 / elapsed_time
         fps_size = cv2.getTextSize("FPS  {}".format(str(int(fps))), font, font_scale, line_type)[0][0]
         cv2.putText(frame, "FPS  {}".format(str(int(fps))), (width - fps_size - 5, 25), font, font_scale, white, line_type)
 
@@ -169,16 +174,11 @@ while True:
 
         # top center
         if (manual_control):
-            cv2.rectangle(frame, (width//2 - 20, 10), (width//2 + 30, 28), white, -1)
+            cv2.rectangle(frame, (width//2 - 20, 10), (width//2 + 25, 28), white, -1)
             cv2.putText(frame, "CTRL", (width//2 - 20, 25), font, font_scale, black, line_type)
         else:
             cv2.rectangle(frame, (width//2 - 20, 10), (width//2 + 30, 28), white, -1)
             cv2.putText(frame, "AUTO", (width//2 - 20, 25), font, font_scale, black, line_type)
-
-        if tracking:
-            lock_size = cv2.getTextSize("LOCK", font, font_scale, line_type)[0][0]
-            cv2.rectangle(frame, (width // 2 - (lock_size // 2), height - 38), (width // 2 + lock_size - 25, height - 20), white, -1)
-            cv2.putText(frame, "LOCK", (width // 2 - (lock_size // 2), height - 23), font, font_scale, black, line_type)
 
         if tracking and thread_init == False:
             print("[TRACK] - THREAD STARTED")
@@ -191,11 +191,34 @@ while True:
 
         if tracker_ret and tracking:
             x, y, w, h = [int(value) for value in roi]
+
             cv2.rectangle(frame, (x, y), (x + w, y + h), white, 1)
-            cv2.line(frame, (x + w // 2, y + (y + h // 2) - 20), (x + w // 2, y - 20), white, 1)
-            cv2.line(frame, ((x + w // 2) - 20, y + h // 2), (x - 20, y + h // 2), white, 1)
-            cv2.line(frame, (x + w // 2 + 20, y + h // 2), (x + w + 20, y + h // 2), white, 1)
-            cv2.line(frame, (x + w // 2, y + h // 2 - 20), (x + w // 2, y + h + 20), white, 1)
+            # top
+            cv2.line(frame, (x + w // 2, (y + h // 2) - (y + h // 2) // 2), (x + w // 2, y - (y + h // 2) // 2), white, 1)
+            # left
+            cv2.line(frame, ((x + w // 2) - (x + w // 2) // 2, y + h // 2), (x - (x + w // 2) // 2, y + h // 2), white, 1)
+            # right
+            cv2.line(frame, (x + w // 2 + ((x + w // 2) // 2), y + h // 2), (x + w + ((x + w // 2) // 2), y + h // 2), white, 1)
+            # bottom
+            cv2.line(frame, (x + w // 2, (y + h // 2) + (y + h // 2) // 2), (x + w // 2, y + h + (y + h // 2) // 2), white, 1)
+
+            target_x = x + w // 2
+            target_y = y + h // 2
+
+            d_x = width // 2 - target_x
+            d_y = height // 2 - target_y
+
+            x_angle_adjust = math.atan(d_x / (width * 0.5 * 20)) * (180 / math.pi)
+            y_angle_adjust = math.atan(d_y / (height * 0.5 * 20)) * (180 / math.pi)
+
+
+            #print(int(x_angle_adjust), int(y_angle_adjust))
+
+            lock_size = cv2.getTextSize("LOCK", font, font_scale, line_type)[0][0]
+            cv2.rectangle(frame, (width // 2 - (lock_size // 2), height - 38), (width // 2 + lock_size - 25, height - 20), white, -1)
+            cv2.putText(frame, "LOCK", (width // 2 - (lock_size // 2), height - 23), font, font_scale, black, line_type)
+        
+        start_time = time.time()
 
     except Exception as error:
         print("[FEED] - UI Error\n", error)
