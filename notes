@@ -55,3 +55,10 @@ def flight_control():
                 if (flight_ctrl_thread):
                     print("[PID] - RESET")
                     flight_ctrl_thread = None
+
+
+
+    #x_spd = (pid[0] * cur_x_error + pid[1] * (cur_x_error - prev_x_error)) * -1
+    #y_spd = pid[0] * cur_y_error + pid[1] * (cur_y_error - prev_y_error)
+    #x_spd = int((np.clip(x_spd, -100, 100)) // 3)
+    #y_spd = int(np.clip(y_spd, -100, 100))

@@ -25,7 +25,6 @@ manual_control = True
 empty_frame = None
 
 lock1 = threading.Lock()
-lock2 = threading.Lock()
 thread_init = False
 reset_track = False
 tracker_thread = None
@@ -38,11 +37,11 @@ point_counter = 0
 
 flt_thread_init = False
 flight_ctrl_thread = None
-pid = [0.2, 0.2, 0]
 cur_x_error = 0
 cur_y_error = 0
 prev_x_error = 0
 prev_y_error = 0
+pid = [0.3, 0.4, 0]
 
 tello = Tello()
 
@@ -62,23 +61,16 @@ except:
     print("[TELLO] - No Signal")
 
 def flight_control(roi):
-    global prev_x_error, prev_y_error, cur_x_error, cur_y_error, centreX, centreY, tello
+    # fix this ----------------
+    global prev_x_error, prev_y_error, cur_x_error, cur_y_error, centreX, centreY, tello, pid
 
     x, y, w, h = [int(value) for value in roi]
-    cur_x_error = centreX - (x + w // 2)
-    cur_y_error = centreY - (y + h // 2)
-    x_spd = (pid[0] * cur_x_error + pid[1] * (cur_x_error - prev_x_error)) * -1
-    y_spd = pid[0] * cur_y_error + pid[1] * (cur_y_error - prev_y_error)
-    x_spd = int(np.clip(x_spd, -100, 100))
-    y_spd = int(np.clip(y_spd, -100, 100))
-    prev_x_error = x_spd
-    prev_y_error = y_spd
-    if roi and tracking:
-        pass
-    else:
-        x_spd = 0
-        prev_x_error = 0
-        prev_y_error = 0
+    cur_x_error = (x + w // 2) - centreX
+    cur_y_error = (y + h // 2) - centreY
+    x_spd = pid[0] * cur_x_error + pid[1] * (cur_x_error - prev_x_error)
+    x_spd = int((np.clip(x_spd, -100, 100)) // 3)
+    prev_x_error = cur_x_error
+    print("[PID]  X: {}".format(-x_spd))
 
     if tello.send_rc_control:
         tello.send_rc_control(0, 0, 0, x_spd)
@@ -246,6 +238,10 @@ while True:
             lock_size = cv2.getTextSize("LOCK", font, font_scale, line_type)[0][0]
             cv2.rectangle(frame, (width // 2 - (lock_size // 2), height - 38), (width // 2 + lock_size - 25, height - 20), white, -1)
             cv2.putText(frame, "LOCK", (width // 2 - (lock_size // 2), height - 23), font, font_scale, black, line_type)
+        else:
+            prev_x_error = 0
+            cur_x_error = 0
+
         
         start_time = time.time()
 
