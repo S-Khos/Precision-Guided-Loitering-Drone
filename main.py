@@ -41,7 +41,8 @@ cur_x_error = 0
 cur_y_error = 0
 prev_x_error = 0
 prev_y_error = 0
-pid = [0.3, 0.4, 0]
+yaw_pid = [0.35, 0.5, 0]
+y_pid = [0.4, 0.5, 0]
 
 tello = Tello()
 
@@ -61,22 +62,27 @@ except:
     print("[TELLO] - No Signal")
 
 def flight_control(roi):
-    # fix this ----------------
-    global prev_x_error, prev_y_error, cur_x_error, cur_y_error, centreX, centreY, tello, pid
+    # add pid control using formula 
+    # execute in a different thread
+    global prev_x_error, prev_y_error, cur_x_error, cur_y_error, centreX, centreY, tello, yaw_pid, y_pid
 
     x, y, w, h = [int(value) for value in roi]
     cur_x_error = (x + w // 2) - centreX
     cur_y_error = (y + h // 2) - centreY
-    x_spd = pid[0] * cur_x_error + pid[1] * (cur_x_error - prev_x_error)
-    x_spd = int((np.clip(x_spd, -100, 100)) // 3)
+    x_spd = yaw_pid[0] * cur_x_error + yaw_pid[1] * (cur_x_error - prev_x_error)
+    y_spd = y_pid[0] * cur_y_error + y_pid[1] * (cur_y_error - prev_y_error)
+    x_spd = int((np.clip(x_spd, -100, 100)) // 2)
+    y_spd = int((np.clip(y_spd, -100, 100)))
     prev_x_error = cur_x_error
-    print("[PID]  X: {}".format(-x_spd))
+    prev_y_error = cur_y_error
+    print("[PID]  X: {}  Y: {}".format(x_spd, y_spd))
 
     if tello.send_rc_control:
-        tello.send_rc_control(0, 0, 0, x_spd)
+        tello.send_rc_control(0, 0, -y_spd, x_spd)
 
 def manual_controller(key):
     global manual_control
+
     if key.char == 'z':
         if manual_control:
             manual_control = False
@@ -191,6 +197,9 @@ while True:
         cv2.putText(frame, "YPR  {}  {}  {}".format(tello.get_pitch(), tello.get_roll(), tello.get_height()), (5, height - 10), font, font_scale, white, line_type)
 
         #bottom right
+        pid_size = cv2.getTextSize("ERR  {}  {}".format(cur_x_error, cur_y_error), font, font_scale, line_type)[0][0]
+        cv2.putText(frame, "ERR  {}  {}".format(cur_x_error, cur_y_error), (width - pid_size -5, height - 40), font, font_scale, white, line_type)
+
         dist_size = cv2.getTextSize("DIST  {}  {}  {}".format(default_dist, default_dist, default_dist), font, font_scale, line_type)[0][0]
         cv2.putText(frame, "DIST  {}  {}  {}".format(default_dist, default_dist, default_dist), (width - dist_size -5, height - 10), font, font_scale, white, line_type)
 
@@ -241,6 +250,8 @@ while True:
         else:
             prev_x_error = 0
             cur_x_error = 0
+            prev_y_error = 0
+            cur_y_error = 0
 
         
         start_time = time.time()
