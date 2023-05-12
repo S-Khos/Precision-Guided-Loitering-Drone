@@ -38,7 +38,7 @@ point_counter = 0
 
 flt_thread_init = False
 flight_ctrl_thread = None
-pid = [0.5, 0.5, 0]
+pid = [0.2, 0.2, 0]
 cur_x_error = 0
 cur_y_error = 0
 prev_x_error = 0
@@ -61,42 +61,27 @@ try:
 except:
     print("[TELLO] - No Signal")
 
-def flight_control():
-    global tello, roi, tracking, manual_control, pid, prev_x_error, prev_y_error, cur_x_error, cur_y_error, flt_thread_init, centreX, centreY, lock2
-    print("[PID] - STARTED")
-    while tracking:
-        x, y, w, h = [int(value) for value in roi]
+def flight_control(roi):
+    global prev_x_error, prev_y_error, cur_x_error, cur_y_error, centreX, centreY, tello
 
-        cur_x_error = centreX - (x + w // 2)
-        cur_y_error = centreY - (y + h // 2)
+    x, y, w, h = [int(value) for value in roi]
+    cur_x_error = centreX - (x + w // 2)
+    cur_y_error = centreY - (y + h // 2)
+    x_spd = (pid[0] * cur_x_error + pid[1] * (cur_x_error - prev_x_error)) * -1
+    y_spd = pid[0] * cur_y_error + pid[1] * (cur_y_error - prev_y_error)
+    x_spd = int(np.clip(x_spd, -100, 100))
+    y_spd = int(np.clip(y_spd, -100, 100))
+    prev_x_error = x_spd
+    prev_y_error = y_spd
+    if roi and tracking:
+        pass
+    else:
+        x_spd = 0
+        prev_x_error = 0
+        prev_y_error = 0
 
-        x_spd = (pid[0] * cur_x_error + pid[1] * (cur_x_error - prev_x_error)) * -1
-        y_spd = pid[0] * cur_y_error + pid[1] * (cur_y_error - prev_y_error)
-        x_spd = int(np.clip(x_spd, -100, 100))
-        y_spd = int(np.clip(y_spd, -100, 100))
-
-        prev_x_error = x_spd
-        prev_y_error = y_spd
-
-        #print("[PID]  X: {}   Y: {}".format(x_spd, y_spd))
-        tello.yaw_velocity = int(x_spd)
-        if tello.send_rc_control:
-            tello.send_rc_control(0, 0, 0, x_spd)
-        time.sleep(0.01)
-    
-    tello.yaw_velocity = 0
-    tello.for_back_velocity = 0
-    tello.left_right_velocity = 0
-    tello.up_down_velocity = 0
-    flt_thread_init = False
-    cur_x_error = 0
-    cur_y_error = 0
-    prev_x_error = 0
-    prev_y_error = 0
     if tello.send_rc_control:
-        tello.send_rc_control(0, 0, 0, 0)
-    print("[PID] - TERMINATED")
-
+        tello.send_rc_control(0, 0, 0, x_spd)
 
 def manual_controller(key):
     global manual_control
@@ -159,7 +144,7 @@ def onMouse(event, x, y, flags, param):
             tracking = True
 
 def run_tracker():
-    global tracking, empty_frame, tracker, roi, tracker_ret, thread_init, reset_track, point_counter
+    global tracking, empty_frame, tracker, roi, tracker_ret, thread_init, reset_track, point_counter, tello
     lock1.acquire()
     thread_init = True
     while tracking:
@@ -172,6 +157,7 @@ def run_tracker():
     thread_init = False
     tracker_thread = None
     lock1.release()
+    tello.send_rc_control(0, 0, 0, 0)
     print("[TRACK] - THREAD TERMINATED")
 
 
@@ -253,16 +239,10 @@ while True:
             cv2.line(frame, (x + w, y + h // 2), (width, y + h // 2), white, 1)
             # bottom
             cv2.line(frame, (x + w // 2, y + h), (x + w // 2, height), white, 1)
-
-            if (manual_control == False and flt_thread_init == False):
-                flight_ctrl_thread = threading.Thread(target=flight_control, daemon=True)
-                flight_ctrl_thread.start()
-                flt_thread_init = True
-            else:
-                if (flight_ctrl_thread):
-                    print("[PID] - RESET")
-                    flight_ctrl_thread = None
                 
+            if manual_control == False:
+                flight_control(roi)
+
             lock_size = cv2.getTextSize("LOCK", font, font_scale, line_type)[0][0]
             cv2.rectangle(frame, (width // 2 - (lock_size // 2), height - 38), (width // 2 + lock_size - 25, height - 20), white, -1)
             cv2.putText(frame, "LOCK", (width // 2 - (lock_size // 2), height - 23), font, font_scale, black, line_type)
