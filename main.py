@@ -41,8 +41,8 @@ cur_x_error = 0
 cur_y_error = 0
 prev_x_error = 0
 prev_y_error = 0
-yaw_pid = [0.35, 0.5, 0]
-y_pid = [0.4, 0.5, 0]
+yaw_pid = [0.4, 0.5, 0]
+y_pid = [0.5, 0.5, 0]
 
 tello = Tello()
 
@@ -81,13 +81,14 @@ def flight_control(roi):
         tello.send_rc_control(0, 0, -y_spd, x_spd)
 
 def manual_controller(key):
-    global manual_control
+    global manual_control, tello
 
     if key.char == 'z':
         if manual_control:
             manual_control = False
         else:
             manual_control = True
+            tello.send_rc_control(0, 0, 0, 0)
     if manual_control:
         try:
             if key.char == 'i':
