@@ -44,7 +44,7 @@ prev_x_error = 0
 prev_y_error = 0
 yaw_pid = [0.4, 0.5, 0]
 y_pid = [0.5, 0.5, 0]
-x_pid = [0.4, 0.5, 0]
+x_pid = [0.3, 0.5, 0]
 z_pid = [0.4, 0.5, 0]
 
 tello = Tello()
@@ -263,7 +263,7 @@ while True:
 
             lock_size = cv2.getTextSize("LOCK", font, font_scale, line_type)[0][0]
             cv2.rectangle(frame, (width // 2 - (lock_size // 2), height - 38), (width // 2 + lock_size - 25, height - 20), white, -1)
-            cv2.putText(frame, "LOCK", (width // 2 - (lock_size // 2), height - 25), font, font_scale, black, line_type)
+            cv2.putText(frame, "LOCK", (width // 2 - (lock_size // 2), height - 24), font, font_scale, black, line_type)
         
         else:
             prev_x_error = 0
