@@ -13,8 +13,8 @@ height = 720
 centreX = width // 2
 centreY = height // 2
 start_time = time.time()
-font = cv2.FONT_HERSHEY_DUPLEX
-font_scale = .6
+font = cv2.FONT_HERSHEY_TRIPLEX
+font_scale = .5
 red = (0, 0, 255)
 green = (0, 255, 0)
 blue = (255, 0, 0)
@@ -24,8 +24,8 @@ line_type = 1
 manual_control = True
 empty_frame = None
 
-lock1 = threading.Lock()
-thread_init = False
+tracker_lock = threading.Lock()
+track_thread_active = False
 reset_track = False
 tracker_thread = None
 tracking = False
@@ -35,7 +35,8 @@ first_point = None
 second_point = None
 point_counter = 0
 
-flt_thread_init = False
+flt_ctrl_active = False
+flt_ctrl_lock = threading.Lock()
 flight_ctrl_thread = None
 cur_x_error = 0
 cur_y_error = 0
@@ -43,6 +44,8 @@ prev_x_error = 0
 prev_y_error = 0
 yaw_pid = [0.4, 0.5, 0]
 y_pid = [0.5, 0.5, 0]
+x_pid = [0.4, 0.5, 0]
+z_pid = [0.4, 0.5, 0]
 
 tello = Tello()
 
@@ -61,24 +64,32 @@ try:
 except:
     print("[TELLO] - No Signal")
 
-def flight_control(roi):
+def flight_controller():
     # add pid control using formula 
-    # execute in a different thread
-    global prev_x_error, prev_y_error, cur_x_error, cur_y_error, centreX, centreY, tello, yaw_pid, y_pid
+    global prev_x_error, prev_y_error, cur_x_error, cur_y_error, centreX, centreY, tello, yaw_pid, y_pid, x_pid, roi, tracker_ret, flt_ctrl_lock, flt_ctrl_active, tracking
+    print("[FLT CTRL] - ACTIVE")
 
-    x, y, w, h = [int(value) for value in roi]
-    cur_x_error = (x + w // 2) - centreX
-    cur_y_error = (y + h // 2) - centreY
-    x_spd = yaw_pid[0] * cur_x_error + yaw_pid[1] * (cur_x_error - prev_x_error)
-    y_spd = y_pid[0] * cur_y_error + y_pid[1] * (cur_y_error - prev_y_error)
-    x_spd = int((np.clip(x_spd, -100, 100)) // 2)
-    y_spd = int((np.clip(y_spd, -100, 100)))
-    prev_x_error = cur_x_error
-    prev_y_error = cur_y_error
-    print("[PID]  X: {}  Y: {}".format(x_spd, y_spd))
+    while tracking and tracker_ret and manual_control == False:
+        x, y, w, h = [int(value) for value in roi]
+        flt_ctrl_lock.acquire()
+        cur_x_error = (x + w // 2) - centreX
+        cur_y_error = (y + h // 2) - centreY
+        r_spd = yaw_pid[0] * cur_x_error + yaw_pid[1] * (cur_x_error - prev_x_error)
+        x_spd = x_pid[0] * cur_x_error + x_pid[1] * (cur_x_error - prev_x_error)
+        y_spd = y_pid[0] * cur_y_error + y_pid[1] * (cur_y_error - prev_y_error)
+        r_spd = int((np.clip(r_spd, -100, 100)) // 1.2)
+        x_spd = int((np.clip(x_spd, -100, 100)))
+        y_spd = int(np.clip(y_spd, -100, 100))
+        prev_x_error = cur_x_error
+        prev_y_error = cur_y_error
+        flt_ctrl_lock.release()
+        #print("[PID]  X: {}  Y: {}".format(x_spd, y_spd))
+        if tello.send_rc_control:
+            tello.send_rc_control(x_spd, 0, 0, 0)
+        time.sleep(0.01)
 
-    if tello.send_rc_control:
-        tello.send_rc_control(0, 0, -y_spd, x_spd)
+    flt_ctrl_active = False
+    print("[FLT CTRL] - TERMINATED")
 
 def manual_controller(key):
     global manual_control, tello
@@ -89,6 +100,7 @@ def manual_controller(key):
         else:
             manual_control = True
             tello.send_rc_control(0, 0, 0, 0)
+
     if manual_control:
         try:
             if key.char == 'i':
@@ -142,10 +154,11 @@ def onMouse(event, x, y, flags, param):
             tracker.init(empty_frame, (first_point[0], first_point[1], abs(second_point[0] - first_point[0]), abs(second_point[1] - first_point[1])))
             tracking = True
 
-def run_tracker():
-    global tracking, empty_frame, tracker, roi, tracker_ret, thread_init, reset_track, point_counter, tello
-    lock1.acquire()
-    thread_init = True
+def tracker_control():
+    global tracking, empty_frame, tracker, roi, tracker_ret, track_thread_active, reset_track, point_counter, tello
+
+    tracker_lock.acquire()
+    track_thread_active = True
     while tracking:
         tracker_ret, roi = tracker.update(empty_frame)
         if tracker_ret == False or reset_track:
@@ -153,9 +166,9 @@ def run_tracker():
             point_counter = 0
         time.sleep(0.01)
 
-    thread_init = False
+    track_thread_active = False
     tracker_thread = None
-    lock1.release()
+    tracker_lock.release()
     tello.send_rc_control(0, 0, 0, 0)
     print("[TRACK] - THREAD TERMINATED")
 
@@ -221,15 +234,16 @@ while True:
             cv2.rectangle(frame, (width//2 - 20, 10), (width//2 + 30, 28), white, -1)
             cv2.putText(frame, "AUTO", (width//2 - 20, 25), font, font_scale, black, line_type)
 
-        if tracking and thread_init == False:
-            print("[TRACK] - THREAD STARTED")
-            tracker_thread = threading.Thread(target=run_tracker, daemon=True)
+        if tracking and track_thread_active == False:
+            print("[TRACK] - THREAD ACTIVE")
+            tracker_thread = threading.Thread(target=tracker_control, daemon=True)
             tracker_thread.start()
 
-        if tracking == False and thread_init == False and tracker_thread:
+        if tracking == False and track_thread_active == False and tracker_thread:
             print("[TRACK] - THREAD RESET")
             tracker_thread = None
 
+        # active tracking / lock
         if tracker_ret and tracking:
             x, y, w, h = [int(value) for value in roi]
             cv2.rectangle(frame, (x, y), (x + w, y + h), white, 1)
@@ -242,12 +256,15 @@ while True:
             # bottom
             cv2.line(frame, (x + w // 2, y + h), (x + w // 2, height), white, 1)
                 
-            if manual_control == False:
-                flight_control(roi)
+            if flt_ctrl_active == False and manual_control == False:
+                flight_ctrl_thread = threading.Thread(target=flight_controller, daemon=True)
+                flight_ctrl_thread.start()
+                flt_ctrl_active = True
 
             lock_size = cv2.getTextSize("LOCK", font, font_scale, line_type)[0][0]
             cv2.rectangle(frame, (width // 2 - (lock_size // 2), height - 38), (width // 2 + lock_size - 25, height - 20), white, -1)
-            cv2.putText(frame, "LOCK", (width // 2 - (lock_size // 2), height - 23), font, font_scale, black, line_type)
+            cv2.putText(frame, "LOCK", (width // 2 - (lock_size // 2), height - 25), font, font_scale, black, line_type)
+        
         else:
             prev_x_error = 0
             cur_x_error = 0
