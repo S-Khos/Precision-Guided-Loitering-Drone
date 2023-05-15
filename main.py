@@ -80,7 +80,7 @@ def flight_controller():
 
         #print("[PID]  X: {}".format(r_spd))
         if drone.send_rc_control:
-            drone.send_rc_control(-x_spd, 0, y_spd, -r_spd)
+            drone.send_rc_control(0, 15, y_spd, -r_spd)
         time.sleep(0.01)
 
     pid_yaw.reset()
@@ -175,6 +175,13 @@ def tracker_control():
     print("[TRACK] - TRACKING TERMINATED")
 
 
+def interface():
+    global frame, width, height, centreX, centreY, start_time, font, font_scale, white, line_type, manual_control, empty_frame, drone
+
+    pass
+
+
+
 cv2.namedWindow("FEED", cv2.WINDOW_NORMAL)
 cv2.moveWindow("FEED", int((1920 // 2) - (width // 2)), int(( 1080 // 2) - ( height // 2)))
 cv2.setMouseCallback("FEED", mouse_event_handler)
@@ -266,15 +273,11 @@ while True:
             lock_size = cv2.getTextSize("LOCK", font, font_scale, line_type)[0][0]
             cv2.rectangle(frame, (width // 2 - (lock_size // 2), height - 38), (width // 2 + lock_size - 25, height - 20), white, -1)
             cv2.putText(frame, "LOCK", (width // 2 - (lock_size // 2), height - 22), font, font_scale, black, line_type)
-        
-        else:
-            prev_time = 0
 
-        
         start_time = time.time()
 
     except Exception as error:
-        print("[FEED] - UI Error\n", error)
+        print("[FEED] - Interface Error\n", error)
     try:
         cv2.imshow("FEED", frame)
     except Exception as error:
