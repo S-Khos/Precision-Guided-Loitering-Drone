@@ -132,7 +132,7 @@ def on_release(key):
     if key == keyboard.Key.esc:
         return False 
 
-def onMouse(event, x, y, flags, param):
+def mouse_event_handler(event, x, y, flags, param):
     global tracker, tracking, point_counter, first_point, second_point, reset_track
     if event == cv2.EVENT_LBUTTONDOWN:
         if point_counter == 0:
@@ -177,7 +177,7 @@ def tracker_control():
 
 cv2.namedWindow("FEED", cv2.WINDOW_NORMAL)
 cv2.moveWindow("FEED", int((1920 // 2) - (width // 2)), int(( 1080 // 2) - ( height // 2)))
-cv2.setMouseCallback("FEED", onMouse)
+cv2.setMouseCallback("FEED", mouse_event_handler)
 
 key_listener = keyboard.Listener(on_press=manual_controller, on_release=on_release)
 key_listener.start()
