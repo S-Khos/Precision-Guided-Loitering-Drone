@@ -14,8 +14,8 @@ height = 720
 centreX = width // 2
 centreY = height // 2
 start_time = time.time()
-font = cv2.FONT_HERSHEY_SIMPLEX
-font_scale = .6
+font = cv2.FONT_HERSHEY_COMPLEX_SMALL
+font_scale = .5
 red = (0, 0, 255)
 green = (0, 255, 0)
 blue = (255, 0, 0)
@@ -39,107 +39,94 @@ point_counter = 0
 flt_ctrl_active = False
 flt_ctrl_lock = threading.Lock()
 flight_ctrl_thread = None
-yaw_pid = [0.3, 0.5, 1]  #kp, ki, kd
+yaw_pid = [0.35, 0.3, 0.3]  #kp, ki, kd
 y_pid = [0.5, 0.5, 0]
 x_pid = [0.3, 0.5, 0]
 z_pid = [0.4, 0.5, 0]
 
-tello = Tello()
+drone = Tello()
 
 try:
-    tello.connect()    
+    drone.connect()    
 except:
-    print("[TELLO] - Connection Error")
+    print("[DRONE] - Connection Error")
 
 time.sleep(2)
 
-init_alt = tello.get_barometer()
+init_alt = drone.get_barometer()
 
 try:
-    tello.streamon()
-    frame_read = tello.get_frame_read()
+    drone.streamon()
+    frame_read = drone.get_frame_read()
 except:
-    print("[TELLO] - No Signal")
+    print("[DRONE] - No Signal")
 
 def flight_controller():
-    global centreX, centreY, tello, yaw_pid, y_pid, x_pid, roi, tracker_ret, flt_ctrl_lock, flt_ctrl_active, tracking
+    global centreX, centreY, drone, yaw_pid, y_pid, x_pid, roi, tracker_ret, flt_ctrl_lock, flt_ctrl_active, tracking, manual_control
     print("[FLT CTRL] - ACTIVE")
 
-    #prev_time = time.time()
-    #r_spd_bar = 0
-    #r_i = 0
-    #x_i = 0
-    #y_i = 0
-    prev_x_error = 0
-    prev_y_error = 0
-    pid_yaw = PID(0.35,0.2,0.2,setpoint=0,output_limits=(-100,100))
-    pid_y = PID(0.3,0.3,0.3,setpoint=0,output_limits=(-80,80))
-    pid_x = PID(0.2,0.2,0.2,setpoint=0,output_limits=(-100,100))
+    pid_yaw = PID(0.3,0.3,0.3,setpoint=0,output_limits=(-80,80))
+    pid_y = PID(0.35,0.3,0.3,setpoint=0,output_limits=(-100,100))
+    pid_x = PID(0.3,0.3,0.3,setpoint=0,output_limits=(-80,80))
 
     while tracking and tracker_ret and manual_control == False:
         x, y, w, h = [int(value) for value in roi]
         cur_x_error = (x + w // 2) - centreX
         cur_y_error = (y + h // 2) - centreY
-        #cur_time = time.time()
 
-        #r_p = yaw_pid[0] * cur_x_error
-        #r_i = yaw_pid[1] * cur_x_error * (cur_time - prev_time)
-        #r_d = yaw_pid[2] * (cur_x_error - prev_x_error) / (cur_time - prev_time)
-        
-        #r_spd = r_spd_bar + r_p + r_i + r_d
-        #r_spd = int((np.clip(r_spd, -100, 100)))
         r_spd = int(pid_yaw(cur_x_error))
-        x_spd = int(pid_yaw(cur_x_error))
+        x_spd = int(pid_x(cur_x_error))
         y_spd = int(pid_y(cur_y_error))
 
-
-        #prev_x_error = cur_x_error
-        #prev_time = cur_time
         #print("[PID]  X: {}".format(r_spd))
-        if tello.send_rc_control:
-            tello.send_rc_control(0, 15, y_spd, -r_spd)
+        if drone.send_rc_control:
+            drone.send_rc_control(-x_spd, 0, y_spd, -r_spd)
         time.sleep(0.01)
 
     pid_yaw.reset()
     pid_y.reset()
     pid_x.reset()
+    flt_ctrl_lock.acquire()
     flt_ctrl_active = False
+    flt_ctrl_lock.release()
     print("[FLT CTRL] - TERMINATED")
 
 def manual_controller(key):
-    global manual_control, tello
-
-    if key.char == 'z':
-        if manual_control:
-            manual_control = False
-        else:
-            manual_control = True
-            tello.send_rc_control(0, 0, 0, 0)
+    global manual_control, drone
+    try:
+        if key.char == 'z':
+            if manual_control:
+                manual_control = False
+            else:
+                manual_control = True
+                drone.send_rc_control(0, 0, 0, 0)
+    except:
+        print("[MNUL CTRL] - Invalid key")
 
     if manual_control:
         try:
             if key.char == 'i':
-                tello.takeoff()
+                drone.takeoff()
             elif key.char == 'k':
-                tello.land()
+                drone.land()
             elif key.char == 'w':
-                tello.move_forward(default_dist)
+                drone.move_forward(default_dist)
             elif key.char == 'a':
-                tello.move_left(default_dist)
+                drone.move_left(default_dist)
             elif key.char == 'd':
-                tello.move_right(default_dist)
+                drone.move_right(default_dist)
             elif key.char == 's':
-                tello.move_back(default_dist)
+                drone.move_back(default_dist)
             elif key.char == 'q':
-                tello.rotate_counter_clockwise(default_dist)
+                drone.rotate_counter_clockwise(default_dist)
             elif key.char == 'e':
-                tello.rotate_clockwise(default_dist)
+                drone.rotate_clockwise(default_dist)
             elif key.char == 'up':
-                tello.move_up(default_dist)
+                drone.move_up(default_dist)
             elif key.char == 'down':
-                tello.move_down(default_dist)
+                drone.move_down(default_dist)
         except:
-            print("[MNUL CTRL] - Invalid key input")
+            print("[MNUL CTRL] - Invalid key")
 
 def on_release(key):
     if key == keyboard.Key.esc:
@@ -170,7 +157,7 @@ def onMouse(event, x, y, flags, param):
             tracking = True
 
 def tracker_control():
-    global tracking, empty_frame, tracker, roi, tracker_ret, track_thread_active, reset_track, point_counter, tello
+    global tracking, empty_frame, tracker, roi, tracker_ret, track_thread_active, reset_track, point_counter, drone
 
     tracker_lock.acquire()
     track_thread_active = True
@@ -184,8 +171,8 @@ def tracker_control():
     track_thread_active = False
     tracker_thread = None
     tracker_lock.release()
-    tello.send_rc_control(0, 0, 0, 0)
-    print("[TRACK] - THREAD TERMINATED")
+    drone.send_rc_control(0, 0, 0, 0)
+    print("[TRACK] - TRACKING TERMINATED")
 
 
 cv2.namedWindow("FEED", cv2.WINDOW_NORMAL)
@@ -208,12 +195,12 @@ while True:
         fps_size = cv2.getTextSize("FPS  {}".format(str(int(fps))), font, font_scale, line_type)[0][0]
         cv2.putText(frame, "FPS  {}".format(str(int(fps))), (width - fps_size - 5, 25), font, font_scale, white, line_type)
 
-        relative_alt = (tello.get_barometer() - init_alt) * 0.0328
-        spd_mag = int(math.sqrt(tello.get_speed_x() ** 2 + tello.get_speed_y() ** 2 + tello.get_speed_z() ** 2))
+        relative_alt = (drone.get_barometer() - init_alt) * 0.0328
+        spd_mag = int(math.sqrt(drone.get_speed_x() ** 2 + drone.get_speed_y() ** 2 + drone.get_speed_z() ** 2))
 
         # top left
-        cv2.putText(frame, "BAT   {}%".format(tello.get_battery()), (5, 25), font, font_scale, white, line_type)
-        cv2.putText(frame, "TEMP  {} C".format(tello.get_temperature()), (5, 55), font, font_scale, white, line_type)
+        cv2.putText(frame, "BAT   {}%".format(drone.get_battery()), (5, 25), font, font_scale, white, line_type)
+        cv2.putText(frame, "TEMP  {} C".format(drone.get_temperature()), (5, 55), font, font_scale, white, line_type)
 
         # crosshair
         cv2.line(frame, (int(width / 2) - 30, int(height / 2)), (int(width / 2) - 10, int(height / 2)), white, 2)
@@ -227,9 +214,9 @@ while True:
         cv2.putText(frame, "ALT  {:.1f} FT".format(relative_alt), ((width // 2) + 90, (height // 2) - 100), font, font_scale, white, line_type)
 
         # bottom left telemtry
-        cv2.putText(frame, "SPD  {}  {}  {}".format(tello.get_speed_x(), tello.get_speed_y(), tello.get_speed_z()), (5, height - 70), font, font_scale, white, line_type)
-        cv2.putText(frame, "ACC  {}  {}  {}".format(tello.get_acceleration_x(), tello.get_acceleration_y(), tello.get_acceleration_z()), (5, height - 40), font, font_scale, white, line_type)
-        cv2.putText(frame, "YPR  {}  {}  {}".format(tello.get_pitch(), tello.get_roll(), tello.get_height()), (5, height - 10), font, font_scale, white, line_type)
+        cv2.putText(frame, "SPD  {}  {}  {}".format(drone.get_speed_x(), drone.get_speed_y(), drone.get_speed_z()), (5, height - 70), font, font_scale, white, line_type)
+        cv2.putText(frame, "ACC  {}  {}  {}".format(drone.get_acceleration_x(), drone.get_acceleration_y(), drone.get_acceleration_z()), (5, height - 40), font, font_scale, white, line_type)
+        cv2.putText(frame, "YPR  {}  {}  {}".format(drone.get_pitch(), drone.get_roll(), drone.get_height()), (5, height - 10), font, font_scale, white, line_type)
 
         #bottom right
         #pid_size = cv2.getTextSize("ERR  {}  {}".format(cur_x_error, cur_y_error), font, font_scale, line_type)[0][0]
@@ -238,8 +225,8 @@ while True:
         #dist_size = cv2.getTextSize("DIST  {}  {}  {}".format(default_dist, default_dist, default_dist), font, font_scale, line_type)[0][0]
         #cv2.putText(frame, "DIST  {}  {}  {}".format(default_dist, default_dist, default_dist), (width - dist_size -5, height - 10), font, font_scale, white, line_type)
 
-        time_size = cv2.getTextSize("T + {}".format(tello.get_flight_time()), font, font_scale, line_type)[0][0]
-        cv2.putText(frame, "T + {}".format(tello.get_flight_time()), (width - time_size - 5, 55), font, font_scale, white, line_type)
+        time_size = cv2.getTextSize("T + {}".format(drone.get_flight_time()), font, font_scale, line_type)[0][0]
+        cv2.putText(frame, "T + {}".format(drone.get_flight_time()), (width - time_size - 5, 55), font, font_scale, white, line_type)
 
         # top center
         if (manual_control and flt_ctrl_active == False):
@@ -250,12 +237,12 @@ while True:
             cv2.putText(frame, "AUTO", (width//2 - 20, 25), font, font_scale, black, line_type)
 
         if tracking and track_thread_active == False:
-            print("[TRACK] - THREAD ACTIVE")
+            print("[TRACK] - TRACKING ACTIVE")
             tracker_thread = threading.Thread(target=tracker_control, daemon=True)
             tracker_thread.start()
 
         if tracking == False and track_thread_active == False and tracker_thread:
-            print("[TRACK] - THREAD RESET")
+            print("[TRACK] - TRACKING RESET")
             tracker_thread = None
 
         # active tracking / lock
@@ -278,7 +265,7 @@ while True:
 
             lock_size = cv2.getTextSize("LOCK", font, font_scale, line_type)[0][0]
             cv2.rectangle(frame, (width // 2 - (lock_size // 2), height - 38), (width // 2 + lock_size - 25, height - 20), white, -1)
-            cv2.putText(frame, "LOCK", (width // 2 - (lock_size // 2), height - 24), font, font_scale, black, line_type)
+            cv2.putText(frame, "LOCK", (width // 2 - (lock_size // 2), height - 22), font, font_scale, black, line_type)
         
         else:
             prev_time = 0
@@ -293,12 +280,13 @@ while True:
     except Exception as error:
         print("[FEED] - Display Error\n", error)
         key_listener.join()
-        tello.streamoff()
-        tello.end()
+        drone.streamoff()
+        drone.end()
     if (cv2.waitKey(1) & 0xff) == 27:
         break
 
 key_listener.join()
 cv2.destroyAllWindows()
-tello.streamoff()
-tello.end()
+drone.streamoff()
+drone.end()
+print("[DRONE] - CONNECTION ENDED")
