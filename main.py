@@ -2,20 +2,20 @@ from djitellopy import Tello
 import cv2, math, time, threading
 import numpy as np
 from pynput import keyboard
-from simple_pid import PID
+from PID import PID
+import matplotlib.pyplot as plt
 
 init_alt = 0
 relative_alt = 0
 spd_mag = 0
-default_dist = 50
 
 width = 960
 height = 720
 centreX = width // 2
 centreY = height // 2
 start_time = time.time()
-font = cv2.FONT_HERSHEY_COMPLEX_SMALL
-font_scale = .5
+font = cv2.FONT_HERSHEY_COMPLEX
+font_scale = .6
 red = (0, 0, 255)
 green = (0, 255, 0)
 blue = (255, 0, 0)
@@ -39,10 +39,14 @@ point_counter = 0
 flt_ctrl_active = False
 flt_ctrl_lock = threading.Lock()
 flight_ctrl_thread = None
-yaw_pid = [0.35, 0.3, 0.3]  #kp, ki, kd
+
+# 0.36, 0.637, 0.050
+yaw_pid = [0.4, 0 ,0]  #kp, ki, kd
+
 y_pid = [0.5, 0.5, 0]
 x_pid = [0.3, 0.5, 0]
-z_pid = [0.4, 0.5, 0]
+yaw_pid_array = []
+yaw_pid_time_array = []
 
 drone = Tello()
 
@@ -63,33 +67,36 @@ except:
 
 def flight_controller():
     global centreX, centreY, drone, yaw_pid, y_pid, x_pid, roi, tracker_ret, flt_ctrl_lock, flt_ctrl_active, tracking, manual_control
+
     print("[FLT CTRL] - ACTIVE")
 
-    pid_yaw = PID(0.3,0.3,0.3,setpoint=0,output_limits=(-80,80))
-    pid_y = PID(0.35,0.3,0.3,setpoint=0,output_limits=(-100,100))
-    pid_x = PID(0.3,0.3,0.3,setpoint=0,output_limits=(-80,80))
+    yaw = PID(yaw_pid[0], yaw_pid[1], yaw_pid[2], centreX, -100, 100)
+    #y_spd = PID(y_pid[0], y_pid[1], y_pid[2], centreY, -100, 100)
+    #x_spd = PID(x_pid[0], x_pid[1], x_pid[2], centreX, -100, 100)
 
     while tracking and tracker_ret and manual_control == False:
         x, y, w, h = [int(value) for value in roi]
-        cur_x_error = (x + w // 2) - centreX
-        cur_y_error = (y + h // 2) - centreY
+        targetX = x + w // 2
+        targetY = y + h // 2
+        yaw_spd, time_dx = yaw.compute(targetX)
+        yaw_pid_array.append(yaw_spd)
+        yaw_pid_time_array.append(time_dx)
+        #y.compute(targetY)
+        #x.compute(targetX)
 
-        r_spd = int(pid_yaw(cur_x_error))
-        x_spd = int(pid_x(cur_x_error))
-        y_spd = int(pid_y(cur_y_error))
 
-        #print("[PID]  X: {}".format(r_spd))
+        #print("[PID]  YAW: {}".format(yaw_spd))
         if drone.send_rc_control:
-            drone.send_rc_control(0, 15, y_spd, -r_spd)
-        time.sleep(0.01)
+            drone.send_rc_control(0, 0, 0, -yaw_spd)
+        time.sleep(0.05)
 
-    pid_yaw.reset()
-    pid_y.reset()
-    pid_x.reset()
+
+    yaw.reset()
     flt_ctrl_lock.acquire()
     flt_ctrl_active = False
     flt_ctrl_lock.release()
     print("[FLT CTRL] - TERMINATED")
+
 
 def manual_controller(key):
     global manual_control, drone
@@ -237,10 +244,10 @@ while True:
 
         # top center
         if (manual_control and flt_ctrl_active == False):
-            cv2.rectangle(frame, (width//2 - 20, 10), (width//2 + 25, 28), white, -1)
+            cv2.rectangle(frame, (width//2 - 20, 10), (width//2 + 29, 28), white, -1)
             cv2.putText(frame, "CTRL", (width//2 - 20, 25), font, font_scale, black, line_type)
         else:
-            cv2.rectangle(frame, (width//2 - 20, 10), (width//2 + 30, 28), white, -1)
+            cv2.rectangle(frame, (width//2 - 20, 10), (width//2 + 31, 28), white, -1)
             cv2.putText(frame, "AUTO", (width//2 - 20, 25), font, font_scale, black, line_type)
 
         if tracking and track_thread_active == False:
@@ -287,6 +294,10 @@ while True:
         drone.end()
     if (cv2.waitKey(1) & 0xff) == 27:
         break
+
+if yaw_pid_array:
+    plt.plot(yaw_pid_time_array, yaw_pid_array)
+    plt.show()
 
 key_listener.join()
 cv2.destroyAllWindows()
