@@ -2,6 +2,7 @@ from djitellopy import Tello
 import cv2, math, time, threading
 import numpy as np
 from pynput import keyboard
+from simple_pid import PID
 
 init_alt = 0
 relative_alt = 0
@@ -13,8 +14,8 @@ height = 720
 centreX = width // 2
 centreY = height // 2
 start_time = time.time()
-font = cv2.FONT_HERSHEY_TRIPLEX
-font_scale = .5
+font = cv2.FONT_HERSHEY_SIMPLEX
+font_scale = .6
 red = (0, 0, 255)
 green = (0, 255, 0)
 blue = (255, 0, 0)
@@ -38,11 +39,7 @@ point_counter = 0
 flt_ctrl_active = False
 flt_ctrl_lock = threading.Lock()
 flight_ctrl_thread = None
-cur_x_error = 0
-cur_y_error = 0
-prev_x_error = 0
-prev_y_error = 0
-yaw_pid = [0.4, 0.5, 0]
+yaw_pid = [0.3, 0.5, 1]  #kp, ki, kd
 y_pid = [0.5, 0.5, 0]
 x_pid = [0.3, 0.5, 0]
 z_pid = [0.4, 0.5, 0]
@@ -65,29 +62,47 @@ except:
     print("[TELLO] - No Signal")
 
 def flight_controller():
-    # add pid control using formula 
-    global prev_x_error, prev_y_error, cur_x_error, cur_y_error, centreX, centreY, tello, yaw_pid, y_pid, x_pid, roi, tracker_ret, flt_ctrl_lock, flt_ctrl_active, tracking
+    global centreX, centreY, tello, yaw_pid, y_pid, x_pid, roi, tracker_ret, flt_ctrl_lock, flt_ctrl_active, tracking
     print("[FLT CTRL] - ACTIVE")
+
+    #prev_time = time.time()
+    #r_spd_bar = 0
+    #r_i = 0
+    #x_i = 0
+    #y_i = 0
+    prev_x_error = 0
+    prev_y_error = 0
+    pid_yaw = PID(0.35,0.2,0.2,setpoint=0,output_limits=(-100,100))
+    pid_y = PID(0.3,0.3,0.3,setpoint=0,output_limits=(-80,80))
+    pid_x = PID(0.2,0.2,0.2,setpoint=0,output_limits=(-100,100))
 
     while tracking and tracker_ret and manual_control == False:
         x, y, w, h = [int(value) for value in roi]
-        flt_ctrl_lock.acquire()
         cur_x_error = (x + w // 2) - centreX
         cur_y_error = (y + h // 2) - centreY
-        r_spd = yaw_pid[0] * cur_x_error + yaw_pid[1] * (cur_x_error - prev_x_error)
-        x_spd = x_pid[0] * cur_x_error + x_pid[1] * (cur_x_error - prev_x_error)
-        y_spd = y_pid[0] * cur_y_error + y_pid[1] * (cur_y_error - prev_y_error)
-        r_spd = int((np.clip(r_spd, -100, 100)) // 1.2)
-        x_spd = int((np.clip(x_spd, -100, 100)))
-        y_spd = int(np.clip(y_spd, -100, 100))
-        prev_x_error = cur_x_error
-        prev_y_error = cur_y_error
-        flt_ctrl_lock.release()
-        #print("[PID]  X: {}  Y: {}".format(x_spd, y_spd))
+        #cur_time = time.time()
+
+        #r_p = yaw_pid[0] * cur_x_error
+        #r_i = yaw_pid[1] * cur_x_error * (cur_time - prev_time)
+        #r_d = yaw_pid[2] * (cur_x_error - prev_x_error) / (cur_time - prev_time)
+        
+        #r_spd = r_spd_bar + r_p + r_i + r_d
+        #r_spd = int((np.clip(r_spd, -100, 100)))
+        r_spd = int(pid_yaw(cur_x_error))
+        x_spd = int(pid_yaw(cur_x_error))
+        y_spd = int(pid_y(cur_y_error))
+
+
+        #prev_x_error = cur_x_error
+        #prev_time = cur_time
+        #print("[PID]  X: {}".format(r_spd))
         if tello.send_rc_control:
-            tello.send_rc_control(x_spd, 0, 0, 0)
+            tello.send_rc_control(0, 15, y_spd, -r_spd)
         time.sleep(0.01)
 
+    pid_yaw.reset()
+    pid_y.reset()
+    pid_x.reset()
     flt_ctrl_active = False
     print("[FLT CTRL] - TERMINATED")
 
@@ -187,6 +202,12 @@ while True:
         empty_frame = frame.copy()
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
+        # top right (fps)
+        elapsed_time = time.time() - start_time
+        fps = 1 / elapsed_time
+        fps_size = cv2.getTextSize("FPS  {}".format(str(int(fps))), font, font_scale, line_type)[0][0]
+        cv2.putText(frame, "FPS  {}".format(str(int(fps))), (width - fps_size - 5, 25), font, font_scale, white, line_type)
+
         relative_alt = (tello.get_barometer() - init_alt) * 0.0328
         spd_mag = int(math.sqrt(tello.get_speed_x() ** 2 + tello.get_speed_y() ** 2 + tello.get_speed_z() ** 2))
 
@@ -201,8 +222,8 @@ while True:
         cv2.line(frame, (int(width / 2), int(height / 2) + 30), (int(width / 2), int(height / 2) + 10), white, 2)
 
         #crosshair stats
-        spd_size = cv2.getTextSize("SPD  0", font, font_scale, line_type)[0][0]
-        cv2.putText(frame, "SPD  {}".format(abs(spd_mag)), ((width // 2) - 90 - spd_size, (height // 2) - 100), font, font_scale, white, line_type)
+        spd_size = cv2.getTextSize("SPD  {} CM/S".format(abs(spd_mag)), font, font_scale, line_type)[0][0]
+        cv2.putText(frame, "SPD  {} CM/S".format(abs(spd_mag)), ((width // 2) - 90 - spd_size, (height // 2) - 100), font, font_scale, white, line_type)
         cv2.putText(frame, "ALT  {:.1f} FT".format(relative_alt), ((width // 2) + 90, (height // 2) - 100), font, font_scale, white, line_type)
 
         # bottom left telemtry
@@ -211,23 +232,17 @@ while True:
         cv2.putText(frame, "YPR  {}  {}  {}".format(tello.get_pitch(), tello.get_roll(), tello.get_height()), (5, height - 10), font, font_scale, white, line_type)
 
         #bottom right
-        pid_size = cv2.getTextSize("ERR  {}  {}".format(cur_x_error, cur_y_error), font, font_scale, line_type)[0][0]
-        cv2.putText(frame, "ERR  {}  {}".format(cur_x_error, cur_y_error), (width - pid_size -5, height - 40), font, font_scale, white, line_type)
+        #pid_size = cv2.getTextSize("ERR  {}  {}".format(cur_x_error, cur_y_error), font, font_scale, line_type)[0][0]
+        #cv2.putText(frame, "ERR  {}  {}".format(cur_x_error, cur_y_error), (width - pid_size -5, height - 40), font, #font_scale, white, line_type)
 
-        dist_size = cv2.getTextSize("DIST  {}  {}  {}".format(default_dist, default_dist, default_dist), font, font_scale, line_type)[0][0]
-        cv2.putText(frame, "DIST  {}  {}  {}".format(default_dist, default_dist, default_dist), (width - dist_size -5, height - 10), font, font_scale, white, line_type)
-
-        # top right (fps)
-        elapsed_time = time.time() - start_time
-        fps = 1 / elapsed_time
-        fps_size = cv2.getTextSize("FPS  {}".format(str(int(fps))), font, font_scale, line_type)[0][0]
-        cv2.putText(frame, "FPS  {}".format(str(int(fps))), (width - fps_size - 5, 25), font, font_scale, white, line_type)
+        #dist_size = cv2.getTextSize("DIST  {}  {}  {}".format(default_dist, default_dist, default_dist), font, font_scale, line_type)[0][0]
+        #cv2.putText(frame, "DIST  {}  {}  {}".format(default_dist, default_dist, default_dist), (width - dist_size -5, height - 10), font, font_scale, white, line_type)
 
         time_size = cv2.getTextSize("T + {}".format(tello.get_flight_time()), font, font_scale, line_type)[0][0]
         cv2.putText(frame, "T + {}".format(tello.get_flight_time()), (width - time_size - 5, 55), font, font_scale, white, line_type)
 
         # top center
-        if (manual_control):
+        if (manual_control and flt_ctrl_active == False):
             cv2.rectangle(frame, (width//2 - 20, 10), (width//2 + 25, 28), white, -1)
             cv2.putText(frame, "CTRL", (width//2 - 20, 25), font, font_scale, black, line_type)
         else:
@@ -266,10 +281,7 @@ while True:
             cv2.putText(frame, "LOCK", (width // 2 - (lock_size // 2), height - 24), font, font_scale, black, line_type)
         
         else:
-            prev_x_error = 0
-            cur_x_error = 0
-            prev_y_error = 0
-            cur_y_error = 0
+            prev_time = 0
 
         
         start_time = time.time()
