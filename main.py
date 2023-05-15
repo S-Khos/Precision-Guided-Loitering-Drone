@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 init_alt = 0
 relative_alt = 0
 spd_mag = 0
+default_dist = 30
 
 width = 960
 height = 720
@@ -51,7 +52,7 @@ yaw_pid_time_array = []
 drone = Tello()
 
 try:
-    drone.connect()    
+    drone.connect()
 except:
     print("[DRONE] - Connection Error")
 
@@ -76,8 +77,8 @@ def flight_controller():
 
     while tracking and tracker_ret and manual_control == False:
         x, y, w, h = [int(value) for value in roi]
-        targetX = x + w // 2
-        targetY = y + h // 2
+        targetX = (x + w) // 2
+        targetY = (y + h) // 2
         yaw_spd, time_dx = yaw.compute(targetX)
         yaw_pid_array.append(yaw_spd)
         yaw_pid_time_array.append(time_dx)
@@ -88,7 +89,7 @@ def flight_controller():
         #print("[PID]  YAW: {}".format(yaw_spd))
         if drone.send_rc_control:
             drone.send_rc_control(0, 0, 0, -yaw_spd)
-        time.sleep(0.05)
+        time.sleep(0.01)
 
 
     yaw.reset()
@@ -99,7 +100,8 @@ def flight_controller():
 
 
 def manual_controller(key):
-    global manual_control, drone
+    global manual_control, drone, default_dist
+
     try:
         if key.char == 'z':
             if manual_control:
@@ -107,11 +109,8 @@ def manual_controller(key):
             else:
                 manual_control = True
                 drone.send_rc_control(0, 0, 0, 0)
-    except:
-        print("[MNUL CTRL] - Invalid key")
 
-    if manual_control:
-        try:
+        if manual_control:
             if key.char == 'i':
                 drone.takeoff()
             elif key.char == 'k':
@@ -132,8 +131,8 @@ def manual_controller(key):
                 drone.move_up(default_dist)
             elif key.char == 'down':
                 drone.move_down(default_dist)
-        except:
-            print("[MNUL CTRL] - Invalid key")
+    except:
+        print("[MNUL CTRL] - Invalid key")
 
 def on_release(key):
     if key == keyboard.Key.esc:
@@ -181,14 +180,6 @@ def tracker_control():
     drone.send_rc_control(0, 0, 0, 0)
     print("[TRACK] - TRACKING TERMINATED")
 
-
-def interface():
-    global frame, width, height, centreX, centreY, start_time, font, font_scale, white, line_type, manual_control, empty_frame, drone
-
-    pass
-
-
-
 cv2.namedWindow("FEED", cv2.WINDOW_NORMAL)
 cv2.moveWindow("FEED", int((1920 // 2) - (width // 2)), int(( 1080 // 2) - ( height // 2)))
 cv2.setMouseCallback("FEED", mouse_event_handler)
@@ -231,13 +222,6 @@ while True:
         cv2.putText(frame, "SPD  {}  {}  {}".format(drone.get_speed_x(), drone.get_speed_y(), drone.get_speed_z()), (5, height - 70), font, font_scale, white, line_type)
         cv2.putText(frame, "ACC  {}  {}  {}".format(drone.get_acceleration_x(), drone.get_acceleration_y(), drone.get_acceleration_z()), (5, height - 40), font, font_scale, white, line_type)
         cv2.putText(frame, "YPR  {}  {}  {}".format(drone.get_pitch(), drone.get_roll(), drone.get_height()), (5, height - 10), font, font_scale, white, line_type)
-
-        #bottom right
-        #pid_size = cv2.getTextSize("ERR  {}  {}".format(cur_x_error, cur_y_error), font, font_scale, line_type)[0][0]
-        #cv2.putText(frame, "ERR  {}  {}".format(cur_x_error, cur_y_error), (width - pid_size -5, height - 40), font, #font_scale, white, line_type)
-
-        #dist_size = cv2.getTextSize("DIST  {}  {}  {}".format(default_dist, default_dist, default_dist), font, font_scale, line_type)[0][0]
-        #cv2.putText(frame, "DIST  {}  {}  {}".format(default_dist, default_dist, default_dist), (width - dist_size -5, height - 10), font, font_scale, white, line_type)
 
         time_size = cv2.getTextSize("T + {}".format(drone.get_flight_time()), font, font_scale, line_type)[0][0]
         cv2.putText(frame, "T + {}".format(drone.get_flight_time()), (width - time_size - 5, 55), font, font_scale, white, line_type)
