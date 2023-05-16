@@ -66,9 +66,10 @@ init_alt = drone.get_barometer()
 
 try:
     drone.streamon()
+    time.sleep(2)
     frame_read = drone.get_frame_read()
 except:
-    print("[DRONE] - No Signal")
+    print("[DRONE] - No feed signal")
 
 def flight_controller():
     global CENTRE_X, CENTRE_Y, drone, yaw_pid, y_pid, x_pid, roi, tracker_ret, flt_ctrl_lock, flt_ctrl_active, tracking, manual_control
@@ -168,7 +169,6 @@ def mouse_event_handler(event, x, y, flags, param):
 
 def tracker_control():
     global tracking, empty_frame, tracker, roi, tracker_ret, track_thread_active, reset_track, point_counter, drone
-
     tracker_lock.acquire()
     track_thread_active = True
     while tracking:
@@ -176,7 +176,7 @@ def tracker_control():
         if tracker_ret == False or reset_track:
             tracking = False
             point_counter = 0
-        time.sleep(0.01)
+        #time.sleep(0.01)
 
     track_thread_active = False
     tracker_thread = None
@@ -269,8 +269,6 @@ while True:
             cv2.rectangle(frame, (WIDTH // 2 - (lock_size // 2), HEIGHT - 38), (WIDTH // 2 + lock_size - 25, HEIGHT - 20), WHITE, -1)
             cv2.putText(frame, "LOCK", (WIDTH // 2 - (lock_size // 2), HEIGHT - 22), FONT, FONT_SCALE, BLACK, LINE_THICKNESS)
 
-        start_time = time.time()
-
     except Exception as error:
         print("[FEED] - Interface Error\n", error)
     try:
@@ -280,8 +278,12 @@ while True:
         key_listener.join()
         drone.streamoff()
         drone.end()
+        
+    start_time = time.time()
+    
     if (cv2.waitKey(1) & 0xff) == 27:
         break
+
 
 
 key_listener.join()
