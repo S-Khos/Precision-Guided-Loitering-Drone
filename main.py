@@ -46,10 +46,12 @@ flight_ctrl_thread = None
 # ki = 1.2 * 0.5 / 1.143
 # kd = 3 * 0.5 * 1.143 / 40
 
-yaw_pid = [0.30,0.52,0.042]  #kp, ki, kd
+YAW_PID = [0.30,0.52,0.042]  #kp, ki, kd
 
-y_pid = [0.5, 0.5, 0]
-x_pid = [0.3, 0.5, 0]
+Y_PID = [0.2, 0, 0]
+
+X_PID = [0.2, 0, 0]
+
 yaw_pid_array = []
 yaw_pid_time_array = []
 
@@ -74,34 +76,47 @@ except:
 def flight_controller():
     global CENTRE_X, CENTRE_Y, drone, yaw_pid, y_pid, x_pid, roi, tracker_ret, flt_ctrl_lock, flt_ctrl_active, tracking, manual_control
 
-    print("[FLT CTRL] - ACTIVE")
+    try:
+        print("[FLT CTRL] - ACTIVE")
 
-    yaw = PID(yaw_pid[0], yaw_pid[1], yaw_pid[2], CENTRE_X, -100, 100)
-    y = PID(y_pid[0], y_pid[1], y_pid[2], CENTRE_Y, -100, 100)
-    #x = PID(x_pid[0], x_pid[1], x_pid[2], CENTRE_X, -100, 100)
+        yaw_pid = PID(YAW_PID[0], YAW_PID[1], YAW_PID[2], CENTRE_X, -100, 100)
+        #y_pid = PID(Y_PID[0], Y_PID[1], Y_PID[2], CENTRE_Y, -100, 100)
+        x_pid = PID(X_PID[0], X_PID[1], X_PID[2], CENTRE_X, -100, 100)
 
-    while tracking and tracker_ret and manual_control == False:
-        x, y, w, h = [int(value) for value in roi]
-        targetX = x + w // 2
-        targetY = y + h // 2
-        yaw_spd, time_dx = yaw.compute(targetX)
-        yaw_pid_array.append(yaw_spd)
-        yaw_pid_time_array.append(time_dx)
-        #y.compute(targetY)
-        #x.compute(targetX)
+        while tracking and tracker_ret and manual_control == False:
+            x, y, w, h = [int(value) for value in roi]
+            targetX = x + w // 2
+            targetY = y + h // 2
 
+            x_spd, time_dx = x_pid.compute(targetX)
+            yaw_spd, time1_dx = yaw_pid.compute(targetX)
 
-        #print("[PID]  YAW: {}".format(yaw_spd))
-        if drone.send_rc_control:
-            drone.send_rc_control(0, 0, 0, -yaw_spd)
-        time.sleep(0.01)
+            #yaw_pid_array.append(x_spd)
+            #yaw_pid_time_array.append(time_dx)
+            #y.compute(targetY)
+            #x.compute(targetX)
 
 
-    yaw.reset()
-    flt_ctrl_lock.acquire()
-    flt_ctrl_active = False
-    flt_ctrl_lock.release()
-    print("[FLT CTRL] - TERMINATED")
+            #print("[PID]  YAW: {}".format(yaw_spd))
+            if drone.send_rc_control:
+                drone.send_rc_control(-x_spd, 0, 0, -yaw_spd)
+            time.sleep(0.01)
+
+
+        #yaw_pid.reset()
+        x_pid.reset()
+        flt_ctrl_lock.acquire()
+        flt_ctrl_active = False
+        flt_ctrl_lock.release()
+        print("[FLT CTRL] - TERMINATED")
+
+    except:
+        x_pid.reset()
+        flt_ctrl_lock.acquire()
+        flt_ctrl_active = False
+        flt_ctrl_lock.release()
+        print("[FLT CTRL] - TERMINATED")
+
 
 
 def manual_controller(key):
@@ -176,7 +191,6 @@ def tracker_control():
         if tracker_ret == False or reset_track:
             tracking = False
             point_counter = 0
-        #time.sleep(0.01)
 
     track_thread_active = False
     tracker_thread = None
@@ -225,7 +239,7 @@ while True:
         # bottom left telemtry
         cv2.putText(frame, "SPD  {}  {}  {}".format(drone.get_speed_x(), drone.get_speed_y(), drone.get_speed_z()), (5, HEIGHT - 70), FONT, FONT_SCALE, WHITE, LINE_THICKNESS)
         cv2.putText(frame, "ACC  {}  {}  {}".format(drone.get_acceleration_x(), drone.get_acceleration_y(), drone.get_acceleration_z()), (5, HEIGHT - 40), FONT, FONT_SCALE, WHITE, LINE_THICKNESS)
-        cv2.putText(frame, "YPR  {}  {}  {}".format(drone.get_pitch(), drone.get_roll(), drone.get_HEIGHT()), (5, HEIGHT - 10), FONT, FONT_SCALE, WHITE, LINE_THICKNESS)
+        cv2.putText(frame, "YPR  {}  {}  {}".format(drone.get_yaw(), drone.get_pitch(), drone.get_roll()), (5, HEIGHT - 10), FONT, FONT_SCALE, WHITE, LINE_THICKNESS)
 
         time_size = cv2.getTextSize("T + {}".format(drone.get_flight_time()), FONT, FONT_SCALE, LINE_THICKNESS)[0][0]
         cv2.putText(frame, "T + {}".format(drone.get_flight_time()), (WIDTH - time_size - 5, 55), FONT, FONT_SCALE, WHITE, LINE_THICKNESS)
@@ -278,7 +292,7 @@ while True:
         key_listener.join()
         drone.streamoff()
         drone.end()
-        
+
     start_time = time.time()
     
     if (cv2.waitKey(1) & 0xff) == 27:
