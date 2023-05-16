@@ -42,7 +42,7 @@ flt_ctrl_lock = threading.Lock()
 flight_ctrl_thread = None
 
 # 0.36, 0.637, 0.050
-yaw_pid = [0.4, 0 ,0]  #kp, ki, kd
+yaw_pid = [0.5, 0 ,0]  #kp, ki, kd
 
 y_pid = [0.5, 0.5, 0]
 x_pid = [0.3, 0.5, 0]
@@ -77,8 +77,8 @@ def flight_controller():
 
     while tracking and tracker_ret and manual_control == False:
         x, y, w, h = [int(value) for value in roi]
-        targetX = (x + w) // 2
-        targetY = (y + h) // 2
+        targetX = x + w // 2
+        targetY = y + h // 2
         yaw_spd, time_dx = yaw.compute(targetX)
         yaw_pid_array.append(yaw_spd)
         yaw_pid_time_array.append(time_dx)
@@ -279,12 +279,14 @@ while True:
     if (cv2.waitKey(1) & 0xff) == 27:
         break
 
-if yaw_pid_array:
-    plt.plot(yaw_pid_time_array, yaw_pid_array)
-    plt.show()
 
 key_listener.join()
 cv2.destroyAllWindows()
 drone.streamoff()
 drone.end()
+
+if yaw_pid_array:
+    plt.plot(yaw_pid_time_array, yaw_pid_array)
+    plt.show()
+
 print("[DRONE] - CONNECTION ENDED")

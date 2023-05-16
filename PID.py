@@ -17,11 +17,10 @@ class PID(object):
         self.MIN_SPD = lower_bound
     
     def compute(self, cur_position):
-        cur_time = time.time()
         self.error = self.target - cur_position
+        cur_time = time.time()
         self.integral += self.error * (cur_time - self.prev_time)
         self.derivative = (self.error - self.prev_error) / (cur_time - self.prev_time)
-        self.prev_error = self.error
         self.output = int(self.kp * self.error + self.ki * self.integral + self.kd * self.derivative)
 
         if (self.MAX_SPD is not None):
@@ -31,10 +30,11 @@ class PID(object):
             if self.output < self.MIN_SPD:
                 self.output = self.MIN_SPD
 
+
+        self.prev_error = self.error
         self.prev_time = cur_time
         
         return (self.output, cur_time)
-
 
     def reset(self):
         self.error = 0
