@@ -1,4 +1,5 @@
 {
     "editor.fontSize": 17,
-    "editor.fontFamily": "\"Source Code Pro\""
+    "editor.fontFamily": "'Cascadia Code'",
+    "files.autoSave": "afterDelay"
 }

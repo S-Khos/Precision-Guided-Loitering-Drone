@@ -2,7 +2,7 @@ from djitellopy import Tello
 import cv2, math, time, threading
 import numpy as np
 from pynput import keyboard
-from PID import PID
+from pid import PID
 import matplotlib.pyplot as plt
 
 init_alt = 0
