@@ -10,19 +10,19 @@ relative_alt = 0
 spd_mag = 0
 default_dist = 30
 
-width = 960
-height = 720
-centreX = width // 2
-centreY = height // 2
+WIDTH = 960
+HEIGHT = 720
+CENTRE_X = WIDTH // 2
+CENTRE_Y = HEIGHT // 2
 start_time = time.time()
-font = cv2.FONT_HERSHEY_COMPLEX
-font_scale = .6
-red = (0, 0, 255)
-green = (0, 255, 0)
-blue = (255, 0, 0)
-white = (255, 255, 255)
-black = (0, 0, 0)
-line_type = 1
+FONT = cv2.FONT_HERSHEY_COMPLEX
+FONT_SCALE = .6
+RED = (0, 0, 255)
+GREEN = (0, 255, 0)
+BLUE = (255, 0, 0)
+WHITE = (255, 255, 255)
+BLACK = (0, 0, 0)
+LINE_THICKNESS = 1
 manual_control = True
 empty_frame = None
 
@@ -41,8 +41,12 @@ flt_ctrl_active = False
 flt_ctrl_lock = threading.Lock()
 flight_ctrl_thread = None
 
-# 0.36, 0.637, 0.050
-yaw_pid = [0.5, 0 ,0]  #kp, ki, kd
+# tu = 1.143
+# ku = 0.5 
+# ki = 1.2 * 0.5 / 1.143
+# kd = 3 * 0.5 * 1.143 / 40
+
+yaw_pid = [0.30,0.52,0.042]  #kp, ki, kd
 
 y_pid = [0.5, 0.5, 0]
 x_pid = [0.3, 0.5, 0]
@@ -67,13 +71,13 @@ except:
     print("[DRONE] - No Signal")
 
 def flight_controller():
-    global centreX, centreY, drone, yaw_pid, y_pid, x_pid, roi, tracker_ret, flt_ctrl_lock, flt_ctrl_active, tracking, manual_control
+    global CENTRE_X, CENTRE_Y, drone, yaw_pid, y_pid, x_pid, roi, tracker_ret, flt_ctrl_lock, flt_ctrl_active, tracking, manual_control
 
     print("[FLT CTRL] - ACTIVE")
 
-    yaw = PID(yaw_pid[0], yaw_pid[1], yaw_pid[2], centreX, -100, 100)
-    #y_spd = PID(y_pid[0], y_pid[1], y_pid[2], centreY, -100, 100)
-    #x_spd = PID(x_pid[0], x_pid[1], x_pid[2], centreX, -100, 100)
+    yaw = PID(yaw_pid[0], yaw_pid[1], yaw_pid[2], CENTRE_X, -100, 100)
+    y = PID(y_pid[0], y_pid[1], y_pid[2], CENTRE_Y, -100, 100)
+    #x = PID(x_pid[0], x_pid[1], x_pid[2], CENTRE_X, -100, 100)
 
     while tracking and tracker_ret and manual_control == False:
         x, y, w, h = [int(value) for value in roi]
@@ -181,7 +185,7 @@ def tracker_control():
     print("[TRACK] - TRACKING TERMINATED")
 
 cv2.namedWindow("FEED", cv2.WINDOW_NORMAL)
-cv2.moveWindow("FEED", int((1920 // 2) - (width // 2)), int(( 1080 // 2) - ( height // 2)))
+cv2.moveWindow("FEED", int((1920 // 2) - (WIDTH // 2)), int(( 1080 // 2) - ( HEIGHT // 2)))
 cv2.setMouseCallback("FEED", mouse_event_handler)
 
 key_listener = keyboard.Listener(on_press=manual_controller, on_release=on_release)
@@ -197,42 +201,42 @@ while True:
         # top right (fps)
         elapsed_time = time.time() - start_time
         fps = 1 / elapsed_time
-        fps_size = cv2.getTextSize("FPS  {}".format(str(int(fps))), font, font_scale, line_type)[0][0]
-        cv2.putText(frame, "FPS  {}".format(str(int(fps))), (width - fps_size - 5, 25), font, font_scale, white, line_type)
+        fps_size = cv2.getTextSize("FPS  {}".format(str(int(fps))), FONT, FONT_SCALE, LINE_THICKNESS)[0][0]
+        cv2.putText(frame, "FPS  {}".format(str(int(fps))), (WIDTH - fps_size - 5, 25), FONT, FONT_SCALE, WHITE, LINE_THICKNESS)
 
         relative_alt = (drone.get_barometer() - init_alt) * 0.0328
         spd_mag = int(math.sqrt(drone.get_speed_x() ** 2 + drone.get_speed_y() ** 2 + drone.get_speed_z() ** 2))
 
         # top left
-        cv2.putText(frame, "BAT   {}%".format(drone.get_battery()), (5, 25), font, font_scale, white, line_type)
-        cv2.putText(frame, "TEMP  {} C".format(drone.get_temperature()), (5, 55), font, font_scale, white, line_type)
+        cv2.putText(frame, "BAT   {}%".format(drone.get_battery()), (5, 25), FONT, FONT_SCALE, WHITE, LINE_THICKNESS)
+        cv2.putText(frame, "TEMP  {} C".format(drone.get_temperature()), (5, 55), FONT, FONT_SCALE, WHITE, LINE_THICKNESS)
 
         # crosshair
-        cv2.line(frame, (int(width / 2) - 30, int(height / 2)), (int(width / 2) - 10, int(height / 2)), white, 2)
-        cv2.line(frame, (int(width / 2) + 30, int(height / 2)), (int(width / 2) + 10, int(height / 2)), white, 2)
-        cv2.line(frame, (int(width / 2), int(height / 2) - 30), (int(width / 2), int(height / 2) - 10), white, 2)
-        cv2.line(frame, (int(width / 2), int(height / 2) + 30), (int(width / 2), int(height / 2) + 10), white, 2)
+        cv2.line(frame, (int(WIDTH / 2) - 30, int(HEIGHT / 2)), (int(WIDTH / 2) - 10, int(HEIGHT / 2)), WHITE, 2)
+        cv2.line(frame, (int(WIDTH / 2) + 30, int(HEIGHT / 2)), (int(WIDTH / 2) + 10, int(HEIGHT / 2)), WHITE, 2)
+        cv2.line(frame, (int(WIDTH / 2), int(HEIGHT / 2) - 30), (int(WIDTH / 2), int(HEIGHT / 2) - 10), WHITE, 2)
+        cv2.line(frame, (int(WIDTH / 2), int(HEIGHT / 2) + 30), (int(WIDTH / 2), int(HEIGHT / 2) + 10), WHITE, 2)
 
         #crosshair stats
-        spd_size = cv2.getTextSize("SPD  {} CM/S".format(abs(spd_mag)), font, font_scale, line_type)[0][0]
-        cv2.putText(frame, "SPD  {} CM/S".format(abs(spd_mag)), ((width // 2) - 90 - spd_size, (height // 2) - 100), font, font_scale, white, line_type)
-        cv2.putText(frame, "ALT  {:.1f} FT".format(relative_alt), ((width // 2) + 90, (height // 2) - 100), font, font_scale, white, line_type)
+        spd_size = cv2.getTextSize("SPD  {} CM/S".format(abs(spd_mag)), FONT, FONT_SCALE, LINE_THICKNESS)[0][0]
+        cv2.putText(frame, "SPD  {} CM/S".format(abs(spd_mag)), ((WIDTH // 2) - 90 - spd_size, (HEIGHT // 2) - 100), FONT, FONT_SCALE, WHITE, LINE_THICKNESS)
+        cv2.putText(frame, "ALT  {:.1f} FT".format(relative_alt), ((WIDTH // 2) + 90, (HEIGHT // 2) - 100), FONT, FONT_SCALE, WHITE, LINE_THICKNESS)
 
         # bottom left telemtry
-        cv2.putText(frame, "SPD  {}  {}  {}".format(drone.get_speed_x(), drone.get_speed_y(), drone.get_speed_z()), (5, height - 70), font, font_scale, white, line_type)
-        cv2.putText(frame, "ACC  {}  {}  {}".format(drone.get_acceleration_x(), drone.get_acceleration_y(), drone.get_acceleration_z()), (5, height - 40), font, font_scale, white, line_type)
-        cv2.putText(frame, "YPR  {}  {}  {}".format(drone.get_pitch(), drone.get_roll(), drone.get_height()), (5, height - 10), font, font_scale, white, line_type)
+        cv2.putText(frame, "SPD  {}  {}  {}".format(drone.get_speed_x(), drone.get_speed_y(), drone.get_speed_z()), (5, HEIGHT - 70), FONT, FONT_SCALE, WHITE, LINE_THICKNESS)
+        cv2.putText(frame, "ACC  {}  {}  {}".format(drone.get_acceleration_x(), drone.get_acceleration_y(), drone.get_acceleration_z()), (5, HEIGHT - 40), FONT, FONT_SCALE, WHITE, LINE_THICKNESS)
+        cv2.putText(frame, "YPR  {}  {}  {}".format(drone.get_pitch(), drone.get_roll(), drone.get_HEIGHT()), (5, HEIGHT - 10), FONT, FONT_SCALE, WHITE, LINE_THICKNESS)
 
-        time_size = cv2.getTextSize("T + {}".format(drone.get_flight_time()), font, font_scale, line_type)[0][0]
-        cv2.putText(frame, "T + {}".format(drone.get_flight_time()), (width - time_size - 5, 55), font, font_scale, white, line_type)
+        time_size = cv2.getTextSize("T + {}".format(drone.get_flight_time()), FONT, FONT_SCALE, LINE_THICKNESS)[0][0]
+        cv2.putText(frame, "T + {}".format(drone.get_flight_time()), (WIDTH - time_size - 5, 55), FONT, FONT_SCALE, WHITE, LINE_THICKNESS)
 
         # top center
         if (manual_control and flt_ctrl_active == False):
-            cv2.rectangle(frame, (width//2 - 20, 10), (width//2 + 29, 28), white, -1)
-            cv2.putText(frame, "CTRL", (width//2 - 20, 25), font, font_scale, black, line_type)
+            cv2.rectangle(frame, (WIDTH//2 - 20, 10), (WIDTH//2 + 29, 28), WHITE, -1)
+            cv2.putText(frame, "CTRL", (WIDTH//2 - 20, 25), FONT, FONT_SCALE, BLACK, LINE_THICKNESS)
         else:
-            cv2.rectangle(frame, (width//2 - 20, 10), (width//2 + 31, 28), white, -1)
-            cv2.putText(frame, "AUTO", (width//2 - 20, 25), font, font_scale, black, line_type)
+            cv2.rectangle(frame, (WIDTH//2 - 20, 10), (WIDTH//2 + 31, 28), WHITE, -1)
+            cv2.putText(frame, "AUTO", (WIDTH//2 - 20, 25), FONT, FONT_SCALE, BLACK, LINE_THICKNESS)
 
         if tracking and track_thread_active == False:
             print("[TRACK] - TRACKING ACTIVE")
@@ -246,24 +250,24 @@ while True:
         # active tracking / lock
         if tracker_ret and tracking:
             x, y, w, h = [int(value) for value in roi]
-            cv2.rectangle(frame, (x, y), (x + w, y + h), white, 1)
+            cv2.rectangle(frame, (x, y), (x + w, y + h), WHITE, 1)
             # top
-            cv2.line(frame, (x + w // 2, y), (x + w // 2, 0), white, 1)
+            cv2.line(frame, (x + w // 2, y), (x + w // 2, 0), WHITE, 1)
             # left
-            cv2.line(frame, (x, y + h // 2), (0, y + h // 2), white, 1)
+            cv2.line(frame, (x, y + h // 2), (0, y + h // 2), WHITE, 1)
             # right
-            cv2.line(frame, (x + w, y + h // 2), (width, y + h // 2), white, 1)
+            cv2.line(frame, (x + w, y + h // 2), (WIDTH, y + h // 2), WHITE, 1)
             # bottom
-            cv2.line(frame, (x + w // 2, y + h), (x + w // 2, height), white, 1)
+            cv2.line(frame, (x + w // 2, y + h), (x + w // 2, HEIGHT), WHITE, 1)
                 
             if flt_ctrl_active == False and manual_control == False:
                 flight_ctrl_thread = threading.Thread(target=flight_controller, daemon=True)
                 flight_ctrl_thread.start()
                 flt_ctrl_active = True
 
-            lock_size = cv2.getTextSize("LOCK", font, font_scale, line_type)[0][0]
-            cv2.rectangle(frame, (width // 2 - (lock_size // 2), height - 38), (width // 2 + lock_size - 25, height - 20), white, -1)
-            cv2.putText(frame, "LOCK", (width // 2 - (lock_size // 2), height - 22), font, font_scale, black, line_type)
+            lock_size = cv2.getTextSize("LOCK", FONT, FONT_SCALE, LINE_THICKNESS)[0][0]
+            cv2.rectangle(frame, (WIDTH // 2 - (lock_size // 2), HEIGHT - 38), (WIDTH // 2 + lock_size - 25, HEIGHT - 20), WHITE, -1)
+            cv2.putText(frame, "LOCK", (WIDTH // 2 - (lock_size // 2), HEIGHT - 22), FONT, FONT_SCALE, BLACK, LINE_THICKNESS)
 
         start_time = time.time()
 
