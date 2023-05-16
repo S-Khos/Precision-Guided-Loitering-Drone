@@ -43,15 +43,14 @@ flt_ctrl_active = False
 flt_ctrl_lock = threading.Lock()
 flight_ctrl_thread = None
 
-# tu = 1.143
-# ku = 0.5 
-# ki = 1.2 * 0.5 / 1.143
-# kd = 3 * 0.5 * 1.143 / 40
+# 
+# ku = 0.5
+# tu = 1.53
+# kp = 0.8 * ku
+# kd = ku * tu / 10
 
-YAW_PID = [0.15,0,0.040]  #kp, ki, kd
-
-Y_PID = [0.2, 0, 0.1]
-
+YAW_PID = [0.3, 0, 0]  #kp, ki, kd
+Y_PID = [1, 0, 0.2]
 X_PID = [0.2, 0, 0]
 
 yaw_pid_array = []
@@ -61,25 +60,29 @@ drone = Tello()
 
 try:
     drone.connect()
+    if (drone.get_battery() < 20):
+        print("[DRONE] - Low battery")
+        drone.end()
 except:
     print("[DRONE] - Connection Error")
-time.sleep(2)
+
+time.sleep(1.5)
 
 try:
     drone.streamon()
-    time.sleep(2)
+    time.sleep(1)
     frame_read = drone.get_frame_read()
 except:
     print("[DRONE] - No feed signal")
 
-def flight_controller():
+def guidance_system():
     global CENTRE_X, CENTRE_Y, drone, yaw_pid, y_pid, x_pid, roi, tracker_ret, flt_ctrl_lock, flt_ctrl_active, tracking, manual_control, lock
 
     try:
         print("[FLT CTRL] - ACTIVE")
 
         yaw_pid = PID(YAW_PID[0], YAW_PID[1], YAW_PID[2], CENTRE_X, -100, 100)
-        y_pid = PID(Y_PID[0], Y_PID[1], Y_PID[2], CENTRE_Y, -100, 100)
+        #y_pid = PID(Y_PID[0], Y_PID[1], Y_PID[2], CENTRE_Y, -100, 100)
         #x_pid = PID(X_PID[0], X_PID[1], X_PID[2], CENTRE_X, -100, 100)
         z_spd = 0
 
@@ -88,12 +91,14 @@ def flight_controller():
             targetX = x + w // 2
             targetY = y + h // 2
 
-            y_spd, y_dx = y_pid.compute(targetY)
+            #y_spd, y_dx = y_pid.compute(targetY)
             yaw_spd, yaw_dx = yaw_pid.compute(targetX)
-            yaw_pid_array.append(y_spd)
-            yaw_pid_time_array.append(y_dx)
+            yaw_pid_array.append(yaw_spd)
+            yaw_pid_time_array.append(yaw_dx)
             #y.compute(targetY)
             #x.compute(targetX)
+            yaw_spd = yaw_spd // 1.5
+
 
             #print("[PID]  YAW: {}".format(yaw_spd))
             if (lock):
@@ -102,15 +107,16 @@ def flight_controller():
                 z_spd = 0
 
             if drone.send_rc_control:
-                drone.send_rc_control(0, 0, y_spd, -yaw_spd)
+                drone.send_rc_control(0, 0, 0, -yaw_spd)
             #time.sleep(0.01)
 
         yaw_pid.reset()
-        y_pid.reset()
+        #y_pid.reset()
         #x_pid.reset()
         flt_ctrl_lock.acquire()
         flt_ctrl_active = False
         flt_ctrl_lock.release()
+        drone.send_rc_control(0, 0, 0, 0)
         print("[FLT CTRL] - TERMINATED")
 
     except Exception as error:
@@ -133,6 +139,7 @@ def manual_controller(key):
                 drone.send_rc_control(0, 0, 0, 0)
         if manual_control:
             if key.char == 'i':
+                drone.send_rc_control(0, 0, 0, 0)
                 drone.takeoff()
             elif key.char == 'k':
                 drone.land()
@@ -266,9 +273,7 @@ while True:
         # active tracking / lock
         if tracker_ret and tracking:
             # color the roi red when it is close to the centre
-
             x, y, w, h = [int(value) for value in roi]
-
             if (CENTRE_X >= x and CENTRE_X <= x + w and CENTRE_Y >= y and CENTRE_Y <= y + h):
                 lock = True
                 roi_colour = RED
@@ -279,7 +284,7 @@ while True:
                 lock = False
                 roi_colour = WHITE
                 trk_size = cv2.getTextSize("TRK", FONT, FONT_SCALE, LINE_THICKNESS)[0][0]
-                cv2.rectangle(frame, (WIDTH // 2 - (trk_size // 2), HEIGHT - 38), (WIDTH // 2 + trk_size - 23, HEIGHT - 20), WHITE, -1)
+                cv2.rectangle(frame, (WIDTH // 2 - (trk_size // 2), HEIGHT - 38), (WIDTH // 2 + trk_size - 20, HEIGHT - 20), WHITE, -1)
                 cv2.putText(frame, "TRK", (WIDTH // 2 - (trk_size // 2), HEIGHT - 22), FONT, FONT_SCALE, BLACK, LINE_THICKNESS)
 
             cv2.rectangle(frame, (x, y), (x + w, y + h), roi_colour, 1)
@@ -293,7 +298,7 @@ while True:
             cv2.line(frame, (x + w // 2, y + h), (x + w // 2, HEIGHT), roi_colour, 1)
                 
             if flt_ctrl_active == False and manual_control == False:
-                flight_ctrl_thread = threading.Thread(target=flight_controller, daemon=True)
+                flight_ctrl_thread = threading.Thread(target=guidance_system, daemon=True)
                 flight_ctrl_thread.start()
                 flt_ctrl_active = True
 

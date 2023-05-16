@@ -17,8 +17,8 @@ class PID(object):
         self.MIN_SPD = lower_bound
     
     def compute(self, cur_position):
-        cur_time = time.time()
         self.error = self.target - cur_position
+        cur_time = time.time()
         self.integral += self.error * (cur_time - self.prev_time)
         self.derivative = (self.error - self.prev_error) / (cur_time - self.prev_time)
         self.prev_error = self.error
