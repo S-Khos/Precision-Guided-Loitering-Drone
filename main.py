@@ -23,6 +23,7 @@ BLUE = (255, 0, 0)
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
 LINE_THICKNESS = 1
+roi_colour = WHITE
 manual_control = True
 empty_frame = None
 
@@ -36,6 +37,7 @@ tracker_ret = False
 first_point = None
 second_point = None
 point_counter = 0
+lock = False
 
 flt_ctrl_active = False
 flt_ctrl_lock = threading.Lock()
@@ -46,9 +48,9 @@ flight_ctrl_thread = None
 # ki = 1.2 * 0.5 / 1.143
 # kd = 3 * 0.5 * 1.143 / 40
 
-YAW_PID = [0.30,0.52,0.042]  #kp, ki, kd
+YAW_PID = [0.15,0,0.040]  #kp, ki, kd
 
-Y_PID = [0.2, 0, 0]
+Y_PID = [0.2, 0, 0.1]
 
 X_PID = [0.2, 0, 0]
 
@@ -61,10 +63,7 @@ try:
     drone.connect()
 except:
     print("[DRONE] - Connection Error")
-
 time.sleep(2)
-
-init_alt = drone.get_barometer()
 
 try:
     drone.streamon()
@@ -74,50 +73,53 @@ except:
     print("[DRONE] - No feed signal")
 
 def flight_controller():
-    global CENTRE_X, CENTRE_Y, drone, yaw_pid, y_pid, x_pid, roi, tracker_ret, flt_ctrl_lock, flt_ctrl_active, tracking, manual_control
+    global CENTRE_X, CENTRE_Y, drone, yaw_pid, y_pid, x_pid, roi, tracker_ret, flt_ctrl_lock, flt_ctrl_active, tracking, manual_control, lock
 
     try:
         print("[FLT CTRL] - ACTIVE")
 
         yaw_pid = PID(YAW_PID[0], YAW_PID[1], YAW_PID[2], CENTRE_X, -100, 100)
-        #y_pid = PID(Y_PID[0], Y_PID[1], Y_PID[2], CENTRE_Y, -100, 100)
-        x_pid = PID(X_PID[0], X_PID[1], X_PID[2], CENTRE_X, -100, 100)
+        y_pid = PID(Y_PID[0], Y_PID[1], Y_PID[2], CENTRE_Y, -100, 100)
+        #x_pid = PID(X_PID[0], X_PID[1], X_PID[2], CENTRE_X, -100, 100)
+        z_spd = 0
 
         while tracking and tracker_ret and manual_control == False:
             x, y, w, h = [int(value) for value in roi]
             targetX = x + w // 2
             targetY = y + h // 2
 
-            x_spd, time_dx = x_pid.compute(targetX)
-            yaw_spd, time1_dx = yaw_pid.compute(targetX)
-
-            #yaw_pid_array.append(x_spd)
-            #yaw_pid_time_array.append(time_dx)
+            y_spd, y_dx = y_pid.compute(targetY)
+            yaw_spd, yaw_dx = yaw_pid.compute(targetX)
+            yaw_pid_array.append(y_spd)
+            yaw_pid_time_array.append(y_dx)
             #y.compute(targetY)
             #x.compute(targetX)
 
-
             #print("[PID]  YAW: {}".format(yaw_spd))
+            if (lock):
+                z_spd = 15
+            else:
+                z_spd = 0
+
             if drone.send_rc_control:
-                drone.send_rc_control(-x_spd, 0, 0, -yaw_spd)
-            time.sleep(0.01)
+                drone.send_rc_control(0, 0, y_spd, -yaw_spd)
+            #time.sleep(0.01)
 
-
-        #yaw_pid.reset()
-        x_pid.reset()
+        yaw_pid.reset()
+        y_pid.reset()
+        #x_pid.reset()
         flt_ctrl_lock.acquire()
         flt_ctrl_active = False
         flt_ctrl_lock.release()
         print("[FLT CTRL] - TERMINATED")
 
-    except:
-        x_pid.reset()
+    except Exception as error:
+        yaw_pid.reset()
         flt_ctrl_lock.acquire()
         flt_ctrl_active = False
         flt_ctrl_lock.release()
+        print("[FLT CTRL] - Error occured\n", error)
         print("[FLT CTRL] - TERMINATED")
-
-
 
 def manual_controller(key):
     global manual_control, drone, default_dist
@@ -129,7 +131,6 @@ def manual_controller(key):
             else:
                 manual_control = True
                 drone.send_rc_control(0, 0, 0, 0)
-
         if manual_control:
             if key.char == 'i':
                 drone.takeoff()
@@ -204,13 +205,14 @@ cv2.setMouseCallback("FEED", mouse_event_handler)
 
 key_listener = keyboard.Listener(on_press=manual_controller, on_release=on_release)
 key_listener.start()
+init_alt = drone.get_barometer()
 
 while True:
     try:
         frame = frame_read.frame
         timer = cv2.getTickCount()
+        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         empty_frame = frame.copy()
-        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
         # top right (fps)
         elapsed_time = time.time() - start_time
@@ -222,8 +224,8 @@ while True:
         spd_mag = int(math.sqrt(drone.get_speed_x() ** 2 + drone.get_speed_y() ** 2 + drone.get_speed_z() ** 2))
 
         # top left
-        cv2.putText(frame, "BAT   {}%".format(drone.get_battery()), (5, 25), FONT, FONT_SCALE, WHITE, LINE_THICKNESS)
-        cv2.putText(frame, "TEMP  {} C".format(drone.get_temperature()), (5, 55), FONT, FONT_SCALE, WHITE, LINE_THICKNESS)
+        cv2.putText(frame, "PWR   {}%".format(drone.get_battery()), (5, 25), FONT, FONT_SCALE, WHITE, LINE_THICKNESS)
+        cv2.putText(frame, "TMP  {} C".format(drone.get_temperature()), (5, 55), FONT, FONT_SCALE, WHITE, LINE_THICKNESS)
 
         # crosshair
         cv2.line(frame, (int(WIDTH / 2) - 30, int(HEIGHT / 2)), (int(WIDTH / 2) - 10, int(HEIGHT / 2)), WHITE, 2)
@@ -263,42 +265,53 @@ while True:
 
         # active tracking / lock
         if tracker_ret and tracking:
+            # color the roi red when it is close to the centre
+
             x, y, w, h = [int(value) for value in roi]
-            cv2.rectangle(frame, (x, y), (x + w, y + h), WHITE, 1)
+
+            if (CENTRE_X >= x and CENTRE_X <= x + w and CENTRE_Y >= y and CENTRE_Y <= y + h):
+                lock = True
+                roi_colour = RED
+                lock_size = cv2.getTextSize("LOCK", FONT, FONT_SCALE, LINE_THICKNESS)[0][0]
+                cv2.rectangle(frame, (WIDTH // 2 - (lock_size // 2), HEIGHT - 38), (WIDTH // 2 + lock_size - 25, HEIGHT - 20), roi_colour, -1)
+                cv2.putText(frame, "LOCK", (WIDTH // 2 - (lock_size // 2), HEIGHT - 22), FONT, FONT_SCALE, WHITE, LINE_THICKNESS)
+            else:
+                lock = False
+                roi_colour = WHITE
+                trk_size = cv2.getTextSize("TRK", FONT, FONT_SCALE, LINE_THICKNESS)[0][0]
+                cv2.rectangle(frame, (WIDTH // 2 - (trk_size // 2), HEIGHT - 38), (WIDTH // 2 + trk_size - 23, HEIGHT - 20), WHITE, -1)
+                cv2.putText(frame, "TRK", (WIDTH // 2 - (trk_size // 2), HEIGHT - 22), FONT, FONT_SCALE, BLACK, LINE_THICKNESS)
+
+            cv2.rectangle(frame, (x, y), (x + w, y + h), roi_colour, 1)
             # top
-            cv2.line(frame, (x + w // 2, y), (x + w // 2, 0), WHITE, 1)
+            cv2.line(frame, (x + w // 2, y), (x + w // 2, 0), roi_colour, 1)
             # left
-            cv2.line(frame, (x, y + h // 2), (0, y + h // 2), WHITE, 1)
+            cv2.line(frame, (x, y + h // 2), (0, y + h // 2), roi_colour, 1)
             # right
-            cv2.line(frame, (x + w, y + h // 2), (WIDTH, y + h // 2), WHITE, 1)
+            cv2.line(frame, (x + w, y + h // 2), (WIDTH, y + h // 2), roi_colour, 1)
             # bottom
-            cv2.line(frame, (x + w // 2, y + h), (x + w // 2, HEIGHT), WHITE, 1)
+            cv2.line(frame, (x + w // 2, y + h), (x + w // 2, HEIGHT), roi_colour, 1)
                 
             if flt_ctrl_active == False and manual_control == False:
                 flight_ctrl_thread = threading.Thread(target=flight_controller, daemon=True)
                 flight_ctrl_thread.start()
                 flt_ctrl_active = True
 
-            lock_size = cv2.getTextSize("LOCK", FONT, FONT_SCALE, LINE_THICKNESS)[0][0]
-            cv2.rectangle(frame, (WIDTH // 2 - (lock_size // 2), HEIGHT - 38), (WIDTH // 2 + lock_size - 25, HEIGHT - 20), WHITE, -1)
-            cv2.putText(frame, "LOCK", (WIDTH // 2 - (lock_size // 2), HEIGHT - 22), FONT, FONT_SCALE, BLACK, LINE_THICKNESS)
-
     except Exception as error:
-        print("[FEED] - Interface Error\n", error)
+        print("[FEED] - Interface error\n", error)
     try:
         cv2.imshow("FEED", frame)
     except Exception as error:
-        print("[FEED] - Display Error\n", error)
+        print("[FEED] - Display error\n", error)
         key_listener.join()
         drone.streamoff()
         drone.end()
+        break
 
     start_time = time.time()
     
     if (cv2.waitKey(1) & 0xff) == 27:
         break
-
-
 
 key_listener.join()
 cv2.destroyAllWindows()
@@ -309,4 +322,4 @@ if yaw_pid_array:
     plt.plot(yaw_pid_time_array, yaw_pid_array)
     plt.show()
 
-print("[DRONE] - CONNECTION ENDED")
+print("[DRONE] - CONNECTION TERMINATED")
