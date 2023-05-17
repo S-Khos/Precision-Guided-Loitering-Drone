@@ -19,3 +19,6 @@ class DroneFeed(object):
     
             if (cv2.waitKey(1) & 0xff) == 27:
                 break
+
+
+	

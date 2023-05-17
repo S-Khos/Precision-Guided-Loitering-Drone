@@ -43,18 +43,17 @@ flt_ctrl_active = False
 flt_ctrl_lock = threading.Lock()
 flight_ctrl_thread = None
 
-# 
 # ku = 0.5
-# tu = 1.53
-# kp = 0.8 * ku
-# kd = ku * tu / 10
+# tu = 1.20
+# kp = 0.6 * ku
+# ki = 1.2 * ku / tu
+# kd = 3 * ku * tu / 40
 
-YAW_PID = [0.3, 0, 0]  #kp, ki, kd
-Y_PID = [1, 0, 0.2]
+YAW_PID = [0.2, 0.2, 0]  #kp, ki, kd
+Y_PID = [0.3, 0.3, 0]
 X_PID = [0.2, 0, 0]
 
 yaw_pid_array = []
-yaw_pid_time_array = []
 
 drone = Tello()
 
@@ -84,7 +83,7 @@ def guidance_system():
         yaw_pid = PID(YAW_PID[0], YAW_PID[1], YAW_PID[2], CENTRE_X, -100, 100, False)
         #y_pid = PID(Y_PID[0], Y_PID[1], Y_PID[2], CENTRE_Y, -100, 100, False)
         #x_pid = PID(X_PID[0], X_PID[1], X_PID[2], CENTRE_X, -100, 100, False)
-        z_spd = 0
+        #z_spd = PID(X_PID[0], X_PID[1], X_PID[2], roi_Area, -100, 100, False)
 
         while tracking and tracker_ret and manual_control == False:
             x, y, w, h = [int(value) for value in roi]
@@ -92,12 +91,10 @@ def guidance_system():
             targetY = y + h // 2
 
             #y_spd, y_dx = y_pid.compute(targetY)
-            yaw_spd, yaw_dx = yaw_pid.compute(targetX)
+            yaw_spd = yaw_pid.compute(targetX)
             yaw_pid_array.append(yaw_spd)
-            yaw_pid_time_array.append(yaw_dx)
             #y.compute(targetY)
             #x.compute(targetX)
-            yaw_spd = yaw_spd
 
 
             #print("[PID]  YAW: {}".format(yaw_spd))
@@ -122,6 +119,7 @@ def guidance_system():
         yaw_pid.reset()
         flt_ctrl_lock.acquire()
         flt_ctrl_active = False
+        manual_control = False
         flt_ctrl_lock.release()
         print("[FLT CTRL] - Error occured\n", error)
         print("[FLT CTRL] - TERMINATED")
@@ -252,6 +250,11 @@ while True:
         time_size = cv2.getTextSize("T + {}".format(drone.get_flight_time()), FONT, FONT_SCALE, LINE_THICKNESS)[0][0]
         cv2.putText(frame, "T + {}".format(drone.get_flight_time()), (WIDTH - time_size - 5, 55), FONT, FONT_SCALE, WHITE, LINE_THICKNESS)
 
+
+        # bottom compass
+        cv2.circle(frame, (WIDTH - 60, HEIGHT - 60), 50, WHITE, 1)
+        cv2.arrowedLine(frame, (WIDTH - 60, HEIGHT - 60), (round(-50 * math.cos(math.radians(abs(drone.get_yaw()))) + WIDTH - 60), round((HEIGHT - 60) - (50 * math.sin(math.radians(abs(drone.get_yaw())))))), WHITE, 1, tipLength = .2)
+
         # top center
         if (manual_control and flt_ctrl_active == False):
             cv2.rectangle(frame, (WIDTH//2 - 20, 10), (WIDTH//2 + 29, 28), WHITE, -1)
@@ -323,7 +326,7 @@ drone.streamoff()
 drone.end()
 
 if yaw_pid_array:
-    plt.plot(yaw_pid_time_array, yaw_pid_array)
+    plt.plot(yaw_pid_array)
     plt.show()
 
 print("[DRONE] - CONNECTION TERMINATED")

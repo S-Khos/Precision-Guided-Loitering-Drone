@@ -43,7 +43,7 @@ class PID(object):
             if self.output < self.MIN_SPD:
                 self.output = self.MIN_SPD
         
-        return (self.output, cur_time)
+        return self.output
 
     def reset(self):
         self.error = 0
