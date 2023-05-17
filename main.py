@@ -66,7 +66,7 @@ try:
 except:
     print("[DRONE] - Connection Error")
 
-time.sleep(1.5)
+time.sleep(1)
 
 try:
     drone.streamon()
@@ -81,9 +81,9 @@ def guidance_system():
     try:
         print("[FLT CTRL] - ACTIVE")
 
-        yaw_pid = PID(YAW_PID[0], YAW_PID[1], YAW_PID[2], CENTRE_X, -100, 100)
-        #y_pid = PID(Y_PID[0], Y_PID[1], Y_PID[2], CENTRE_Y, -100, 100)
-        #x_pid = PID(X_PID[0], X_PID[1], X_PID[2], CENTRE_X, -100, 100)
+        yaw_pid = PID(YAW_PID[0], YAW_PID[1], YAW_PID[2], CENTRE_X, -100, 100, False)
+        #y_pid = PID(Y_PID[0], Y_PID[1], Y_PID[2], CENTRE_Y, -100, 100, False)
+        #x_pid = PID(X_PID[0], X_PID[1], X_PID[2], CENTRE_X, -100, 100, False)
         z_spd = 0
 
         while tracking and tracker_ret and manual_control == False:
@@ -97,7 +97,7 @@ def guidance_system():
             yaw_pid_time_array.append(yaw_dx)
             #y.compute(targetY)
             #x.compute(targetX)
-            yaw_spd = yaw_spd // 1.5
+            yaw_spd = yaw_spd
 
 
             #print("[PID]  YAW: {}".format(yaw_spd))
@@ -108,7 +108,6 @@ def guidance_system():
 
             if drone.send_rc_control:
                 drone.send_rc_control(0, 0, 0, -yaw_spd)
-            #time.sleep(0.01)
 
         yaw_pid.reset()
         #y_pid.reset()
