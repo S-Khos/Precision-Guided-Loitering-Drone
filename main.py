@@ -49,8 +49,8 @@ flight_ctrl_thread = None
 # ki = 1.2 * ku / tu
 # kd = 3 * ku * tu / 40
 
-YAW_PID = [0.2, 0.2, 0]  #kp, ki, kd
-Y_PID = [0.3, 0.3, 0]
+YAW_PID = [0.2, 0.2, 0] 
+Y_PID = [0.2, 0.1, 0]
 X_PID = [0.2, 0, 0]
 
 yaw_pid_array = []
@@ -76,39 +76,30 @@ except:
 
 def guidance_system():
     global CENTRE_X, CENTRE_Y, drone, yaw_pid, y_pid, x_pid, roi, tracker_ret, flt_ctrl_lock, flt_ctrl_active, tracking, manual_control, lock
-
     try:
         print("[FLT CTRL] - ACTIVE")
-
         yaw_pid = PID(YAW_PID[0], YAW_PID[1], YAW_PID[2], CENTRE_X, -100, 100, False)
-        #y_pid = PID(Y_PID[0], Y_PID[1], Y_PID[2], CENTRE_Y, -100, 100, False)
-        #x_pid = PID(X_PID[0], X_PID[1], X_PID[2], CENTRE_X, -100, 100, False)
-        #z_spd = PID(X_PID[0], X_PID[1], X_PID[2], roi_Area, -100, 100, False)
+        y_pid = PID(Y_PID[0], Y_PID[1], Y_PID[2], CENTRE_Y, -100, 100, False)
 
         while tracking and tracker_ret and manual_control == False:
             x, y, w, h = [int(value) for value in roi]
             targetX = x + w // 2
             targetY = y + h // 2
+            targetArea = (x + w) * (y + h)
 
-            #y_spd, y_dx = y_pid.compute(targetY)
-            yaw_spd = yaw_pid.compute(targetX)
-            yaw_pid_array.append(yaw_spd)
-            #y.compute(targetY)
-            #x.compute(targetX)
+            y_velocity = y_pid.compute(targetY)
+            yaw_velocity = yaw_pid.compute(targetX)
 
-
-            #print("[PID]  YAW: {}".format(yaw_spd))
             if (lock):
                 z_spd = 15
             else:
                 z_spd = 0
 
-            if drone.send_rc_control:
-                drone.send_rc_control(0, 0, 0, -yaw_spd)
-
+            print("YAW: {}".format(yaw_velocity))
+            #if drone.send_rc_control:
+            #    drone.send_rc_control(0, 0, y_velocity, -yaw_velocity)
         yaw_pid.reset()
-        #y_pid.reset()
-        #x_pid.reset()
+        y_pid.reset()
         flt_ctrl_lock.acquire()
         flt_ctrl_active = False
         flt_ctrl_lock.release()
@@ -122,7 +113,6 @@ def guidance_system():
         manual_control = False
         flt_ctrl_lock.release()
         print("[FLT CTRL] - Error occured\n", error)
-        print("[FLT CTRL] - TERMINATED")
 
 def manual_controller(key):
     global manual_control, drone, default_dist

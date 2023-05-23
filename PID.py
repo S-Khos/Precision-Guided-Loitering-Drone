@@ -30,7 +30,7 @@ class PID(object):
             self.prev_time = cur_time
         else:
             self.proportional = self.error
-            self.integral += self.error
+            self.integral = self.error # changed from += to =
             self.derivative = self.error - self.prev_error
             self.prev_error = self.error
         
@@ -51,5 +51,6 @@ class PID(object):
         self.time = None
         self.integral = 0
         self.derivative = 0
+        self.proportional = 0
         self.output = 0
         
