@@ -49,9 +49,9 @@ flight_ctrl_thread = None
 # ki = 1.2 * ku / tu
 # kd = 3 * ku * tu / 40
 
-YAW_PID = [0.2, 0.2, 0] 
-Y_PID = [0.2, 0.1, 0]
-X_PID = [0.2, 0, 0]
+YAW_PID = [0.2, 0.3, 0]
+Y_PID = [0.2, 0.2, 0]
+X_PID = [0.2, 0.2, 0]
 
 yaw_pid_array = []
 
@@ -78,26 +78,32 @@ def guidance_system():
     global CENTRE_X, CENTRE_Y, drone, yaw_pid, y_pid, x_pid, roi, tracker_ret, flt_ctrl_lock, flt_ctrl_active, tracking, manual_control, lock
     try:
         print("[FLT CTRL] - ACTIVE")
-        yaw_pid = PID(YAW_PID[0], YAW_PID[1], YAW_PID[2], CENTRE_X, -100, 100, False)
+        yaw_pid = PID(YAW_PID[0], YAW_PID[1], YAW_PID[2], CENTRE_X, -90, 90, False)
         y_pid = PID(Y_PID[0], Y_PID[1], Y_PID[2], CENTRE_Y, -100, 100, False)
+        x_pid = PID(X_PID[0], X_PID[1], X_PID[2], CENTRE_X, -90, 90, False)
 
         while tracking and tracker_ret and manual_control == False:
             x, y, w, h = [int(value) for value in roi]
             targetX = x + w // 2
             targetY = y + h // 2
-            targetArea = (x + w) * (y + h)
-
-            y_velocity = y_pid.compute(targetY)
+            roiArea = (x + w) * (y + h) // 2
+            
             yaw_velocity = yaw_pid.compute(targetX)
+            x_velocity = yaw_pid.compute(targetX)
+            y_velocity = y_pid.compute(targetY)
 
             if (lock):
                 z_spd = 15
             else:
                 z_spd = 0
 
-            print("YAW: {}".format(yaw_velocity))
-            #if drone.send_rc_control:
-            #    drone.send_rc_control(0, 0, y_velocity, -yaw_velocity)
+            #print("YAW: {}".format(yaw_velocity))
+            if drone.send_rc_control:
+                if (x_velocity > 40):
+                    drone.send_rc_control(-x_velocity, 0, y_velocity, 0)
+                else:
+                    drone.send_rc_control(0, 0, y_velocity, -yaw_velocity)
+
         yaw_pid.reset()
         y_pid.reset()
         flt_ctrl_lock.acquire()
@@ -243,7 +249,7 @@ while True:
 
         # bottom compass
         cv2.circle(frame, (WIDTH - 60, HEIGHT - 60), 50, WHITE, 1)
-        cv2.arrowedLine(frame, (WIDTH - 60, HEIGHT - 60), (round(-50 * math.cos(math.radians(abs(drone.get_yaw()))) + WIDTH - 60), round((HEIGHT - 60) - (50 * math.sin(math.radians(abs(drone.get_yaw())))))), WHITE, 1, tipLength = .2)
+        cv2.arrowedLine(frame, (WIDTH - 60, HEIGHT - 60), (round(-50 * math.cos(math.radians(drone.get_yaw())) + WIDTH - 60), round((HEIGHT - 60) - (50 * math.sin(math.radians(drone.get_yaw()))))), WHITE, 1, tipLength = .2)
 
         # top center
         if (manual_control and flt_ctrl_active == False):
