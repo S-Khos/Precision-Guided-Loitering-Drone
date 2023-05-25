@@ -52,7 +52,7 @@ flight_ctrl_thread = None
 
 YAW_PID = [0.25, 0, 0]
 Y_PID = [0.1, 0.1, 0.1]
-X_PID = [0.1, 0.1, 0.1]
+X_PID = [0.2, 0, 0]
 
 yaw_pid_array = []
 
@@ -82,7 +82,7 @@ def guidance_system():
         #yaw_pid = PID(YAW_PID[0], YAW_PID[1], YAW_PID[2], CENTRE_X, -100, 100, True)
         yaw_pid = PID2(YAW_PID[0], YAW_PID[1], YAW_PID[2], setpoint=CENTRE_X, output_limits=(-100,100))
         y_pid = PID2(Y_PID[0], Y_PID[1], Y_PID[2], setpoint=CENTRE_Y, output_limits=(-80,100))
-        #x_pid = PID(X_PID[0], X_PID[1], X_PID[2], CENTRE_X, -90, 90, True)
+        x_pid = PID2(X_PID[0], X_PID[1], X_PID[2], setpoint=CENTRE_X, output_limits=(-90,90))
 
         while tracking and tracker_ret and manual_control == False:
             x, y, w, h = [int(value) for value in roi]
@@ -90,9 +90,8 @@ def guidance_system():
             targetY = y + h // 2
             roiArea = (x + w) * (y + h) // 2
             
-            #yaw_velocity = yaw_pid.compute(targetX)
             yaw_velocity = int(yaw_pid(targetX))
-            #x_velocity = yaw_pid.compute(targetX)
+            x_velocity = int(x_pid.compute(targetX))
             y_velocity = int(y_pid(targetY))
 
             if (lock):
@@ -102,13 +101,11 @@ def guidance_system():
 
             #print("YAW: {}".format(yaw_velocity))
             if drone.send_rc_control:
-            #    if (x_velocity > 40):
-            #        drone.send_rc_control(-x_velocity, 0, y_velocity, 0)
-            #    else:
-                drone.send_rc_control(0, 0, y_velocity, -yaw_velocity)
+                if (x_velocity > 40):
+                    drone.send_rc_control(-x_velocity, 0, y_velocity, 0)
+                else:
+                    drone.send_rc_control(0, 0, y_velocity, -yaw_velocity)
 
-        #yaw_pid.reset()
-        #y_pid.reset()
         flt_ctrl_lock.acquire()
         flt_ctrl_active = False
         flt_ctrl_lock.release()
@@ -116,7 +113,7 @@ def guidance_system():
         print("[FLT CTRL] - TERMINATED")
 
     except Exception as error:
-        yaw_pid.reset()
+        #yaw_pid.reset()
         flt_ctrl_lock.acquire()
         flt_ctrl_active = False
         manual_control = False
