@@ -3,6 +3,7 @@ import cv2, math, time, threading
 import numpy as np
 from pynput import keyboard
 from pid import PID
+from simple_pid import PID as PID2
 import matplotlib.pyplot as plt
 
 init_alt = 0
@@ -49,9 +50,9 @@ flight_ctrl_thread = None
 # ki = 1.2 * ku / tu
 # kd = 3 * ku * tu / 40
 
-YAW_PID = [0.2, 0.3, 0]
-Y_PID = [0.2, 0.2, 0]
-X_PID = [0.2, 0.2, 0]
+YAW_PID = [0.25, 0, 0]
+Y_PID = [0.1, 0.1, 0.1]
+X_PID = [0.1, 0.1, 0.1]
 
 yaw_pid_array = []
 
@@ -78,9 +79,10 @@ def guidance_system():
     global CENTRE_X, CENTRE_Y, drone, yaw_pid, y_pid, x_pid, roi, tracker_ret, flt_ctrl_lock, flt_ctrl_active, tracking, manual_control, lock
     try:
         print("[FLT CTRL] - ACTIVE")
-        yaw_pid = PID(YAW_PID[0], YAW_PID[1], YAW_PID[2], CENTRE_X, -90, 90, False)
-        y_pid = PID(Y_PID[0], Y_PID[1], Y_PID[2], CENTRE_Y, -100, 100, False)
-        x_pid = PID(X_PID[0], X_PID[1], X_PID[2], CENTRE_X, -90, 90, False)
+        #yaw_pid = PID(YAW_PID[0], YAW_PID[1], YAW_PID[2], CENTRE_X, -100, 100, True)
+        yaw_pid = PID2(YAW_PID[0], YAW_PID[1], YAW_PID[2], setpoint=CENTRE_X, output_limits=(-100,100))
+        y_pid = PID2(Y_PID[0], Y_PID[1], Y_PID[2], setpoint=CENTRE_Y, output_limits=(-80,100))
+        #x_pid = PID(X_PID[0], X_PID[1], X_PID[2], CENTRE_X, -90, 90, True)
 
         while tracking and tracker_ret and manual_control == False:
             x, y, w, h = [int(value) for value in roi]
@@ -88,9 +90,10 @@ def guidance_system():
             targetY = y + h // 2
             roiArea = (x + w) * (y + h) // 2
             
-            yaw_velocity = yaw_pid.compute(targetX)
-            x_velocity = yaw_pid.compute(targetX)
-            y_velocity = y_pid.compute(targetY)
+            #yaw_velocity = yaw_pid.compute(targetX)
+            yaw_velocity = int(yaw_pid(targetX))
+            #x_velocity = yaw_pid.compute(targetX)
+            y_velocity = int(y_pid(targetY))
 
             if (lock):
                 z_spd = 15
@@ -99,13 +102,13 @@ def guidance_system():
 
             #print("YAW: {}".format(yaw_velocity))
             if drone.send_rc_control:
-                if (x_velocity > 40):
-                    drone.send_rc_control(-x_velocity, 0, y_velocity, 0)
-                else:
-                    drone.send_rc_control(0, 0, y_velocity, -yaw_velocity)
+            #    if (x_velocity > 40):
+            #        drone.send_rc_control(-x_velocity, 0, y_velocity, 0)
+            #    else:
+                drone.send_rc_control(0, 0, y_velocity, -yaw_velocity)
 
-        yaw_pid.reset()
-        y_pid.reset()
+        #yaw_pid.reset()
+        #y_pid.reset()
         flt_ctrl_lock.acquire()
         flt_ctrl_active = False
         flt_ctrl_lock.release()
@@ -122,7 +125,6 @@ def guidance_system():
 
 def manual_controller(key):
     global manual_control, drone, default_dist
-
     try:
         if key.char == 'z':
             if manual_control:
@@ -130,6 +132,7 @@ def manual_controller(key):
             else:
                 manual_control = True
                 drone.send_rc_control(0, 0, 0, 0)
+
         if manual_control:
             if key.char == 'i':
                 drone.send_rc_control(0, 0, 0, 0)
@@ -163,11 +166,11 @@ def mouse_event_handler(event, x, y, flags, param):
     global tracker, tracking, point_counter, first_point, second_point, reset_track
     if event == cv2.EVENT_LBUTTONDOWN:
         if point_counter == 0:
-            print("[TRACK] - P1: ({}, {})".format(x,y))
+            #print("[TRACK] - P1: ({}, {})".format(x,y))
             first_point = (x, y)
             point_counter += 1
         if point_counter == 1 and (x,y) != first_point:
-            print("[TRACK] - P2: ({}, {})".format(x,y))
+            #print("[TRACK] - P2: ({}, {})".format(x,y))
             second_point = (x, y)
             point_counter += 1
         if tracking and point_counter == 2:
@@ -176,7 +179,7 @@ def mouse_event_handler(event, x, y, flags, param):
             second_point = None
             tracking = False
             reset_track = True
-            print("[TRACK] - ROI RESET")
+            #print("[TRACK] - ROI RESET")
         if point_counter == 2:
             reset_track = False
             tracker = cv2.legacy.TrackerCSRT_create()

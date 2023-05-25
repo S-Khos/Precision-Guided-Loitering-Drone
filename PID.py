@@ -10,7 +10,7 @@ class PID(object):
         self.target = target
         self.error = 0
         self.prev_error = 0
-        self.prev_time = time.time() if self.use_time == True else None
+        self.prev_time = int(time.monotonic() - 1) if self.use_time == True else None
         self.proportional = 0
         self.integral = 0
         self.derivative = 0
@@ -20,20 +20,20 @@ class PID(object):
     
     def compute(self, cur_position):
         self.error = self.target - cur_position
-
         if (self.use_time):
-            cur_time = time.time()
+            cur_time = int(time.monotonic())
+            time_diff = cur_time - self.prev_time
             self.proportional = self.error
-            self.integral += self.error * (cur_time - self.prev_time)
-            self.derivative = (self.error - self.prev_error) / (cur_time - self.prev_time)
+            self.integral += self.error * (time_diff)
+            self.derivative = (self.error - self.prev_error) / (time_diff)
             self.prev_error = self.error
             self.prev_time = cur_time
         else:
             self.proportional = self.error
-            self.integral = self.error # changed from += to =
+            self.integral += self.error # changed from += to =
             self.derivative = self.error - self.prev_error
             self.prev_error = self.error
-        
+    
         self.output = int(self.kp * self.proportional + self.ki * self.integral + self.kd * self.derivative)
 
         if (self.MAX_SPD is not None):
@@ -48,7 +48,6 @@ class PID(object):
     def reset(self):
         self.error = 0
         self.prev_error = 0
-        self.time = None
         self.integral = 0
         self.derivative = 0
         self.proportional = 0
