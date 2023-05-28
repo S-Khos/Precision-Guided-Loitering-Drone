@@ -53,7 +53,7 @@ flight_ctrl_thread = None
 # ki = 1.2 * ku / tu
 # kd = 3 * ku * tu / 40
 
-YAW_PID = [0.58, 0, 0]
+YAW_PID = [0.3, 0, 0]
 Y_PID = [0.1, 0.1, 0.1]
 X_PID = [0.15, 0, 0]
 
@@ -84,13 +84,8 @@ def guidance_system():
     global CENTRE_X, CENTRE_Y, drone, yaw_pid, y_pid, x_pid, roi, tracker_ret, flt_ctrl_lock, flt_ctrl_active, tracking, manual_control, lock
     try:
         print("[FLT CTRL] - ACTIVE")
-        # yaw_pid = PID(YAW_PID[0], YAW_PID[1], YAW_PID[2], CENTRE_X, -100, 100, True)
-        yaw_pid = PID2(YAW_PID[0], YAW_PID[1], YAW_PID[2],
-                       setpoint=CENTRE_X, output_limits=(-100, 100))
-        y_pid = PID2(Y_PID[0], Y_PID[1], Y_PID[2],
-                     setpoint=CENTRE_Y, output_limits=(-80, 100))
-        x_pid = PID2(X_PID[0], X_PID[1], X_PID[2],
-                     setpoint=CENTRE_X, output_limits=(-70, 70))
+
+        yaw_pid = PID(YAW_PID[0], YAW_PID[1], YAW_PID[2], CENTRE_X, -100, 100)
 
         while tracking and tracker_ret and manual_control == False:
             x, y, w, h = [int(value) for value in roi]
@@ -98,23 +93,17 @@ def guidance_system():
             targetY = y + h // 2
             roiArea = (x + w) * (y + h) // 2
 
-            yaw_velocity = int(yaw_pid(targetX))
+            yaw_velocity, yaw_time = yaw_pid.update(targetX)
             yaw_pid_array.append(yaw_velocity)
-            x_velocity = int(x_pid(targetX))
-            y_velocity = int(y_pid(targetY))
+            yaw_pid_time.append(yaw_time)
 
             if (lock):
                 z_spd = 15
             else:
                 z_spd = 0
 
-            # print("YAW: {}".format(yaw_velocity))
             if drone.send_rc_control:
-                # if (x_velocity > 50):
-                #    drone.send_rc_control(-x_velocity, 0, y_velocity, 0)
-                # else:
-
-                drone.send_rc_control(0, 0, 0, -yaw_velocity)
+                drone.send_rc_control(0, 0, 0, int(-yaw_velocity))
             time.sleep(0.01)
 
         flt_ctrl_lock.acquire()
@@ -373,5 +362,5 @@ drone.end()
 print("[DRONE] - CONNECTION TERMINATED")
 
 if yaw_pid_array:
-    plt.plot(yaw_pid_array)
+    plt.plot(yaw_pid_array, yaw_pid_time)
     plt.show()

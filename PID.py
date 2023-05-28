@@ -3,7 +3,7 @@ import time
 
 
 class PID(object):
-    def __init__(self, kp, ki, kd, target, lower_bound=None, upper_bound=None, init_time=None):
+    def __init__(self, kp, ki, kd, target=0, lower_bound=None, upper_bound=None, init_time=None):
         self.kp = kp
         self.ki = ki
         self.kd = kd
@@ -11,7 +11,7 @@ class PID(object):
         self.error = 0
         self.prev_error = 0
         self.cur_time = init_time if init_time is not None else time.time()
-        self.prev_time = self.cur_time
+        self.prev_time = self.cur_time - 1
         self.time_diff = 0
         self.proportional = 0
         self.integral = 0
@@ -20,7 +20,7 @@ class PID(object):
         self.MAX_SPD = upper_bound
         self.MIN_SPD = lower_bound
 
-    def compute(self, cur_position, cur_time=None):
+    def update(self, cur_position, cur_time=None):
         self.error = self.target - cur_position
         self.cur_time = cur_time if cur_time is not None else time.time()
         self.time_diff = self.cur_time - self.prev_time
@@ -30,8 +30,8 @@ class PID(object):
         self.prev_error = self.error
         self.prev_time = cur_time
 
-        self.output = int(self.kp * self.proportional +
-                          self.ki * self.integral + self.kd * self.derivative)
+        self.output = self.kp * self.proportional + \
+            self.ki * self.integral + self.kd * self.derivative
 
         if (self.MAX_SPD is not None):
             if (self.output > self.MAX_SPD):
@@ -40,7 +40,7 @@ class PID(object):
             if self.output < self.MIN_SPD:
                 self.output = self.MIN_SPD
 
-        return self.output
+        return (self.output, self.cur_time)
 
     def reset(self):
         self.error = 0
