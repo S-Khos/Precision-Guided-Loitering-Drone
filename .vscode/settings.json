@@ -1,5 +1,9 @@
 {
     "editor.fontSize": 17,
     "editor.fontFamily": "'Cascadia Code'",
-    "files.autoSave": "afterDelay"
+    "files.autoSave": "afterDelay",
+    "[python]": {
+        "editor.defaultFormatter": "ms-python.autopep8"
+    },
+    "python.formatting.provider": "none"
 }

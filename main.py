@@ -1,5 +1,8 @@
 from djitellopy import Tello
-import cv2, math, time, threading
+import cv2
+import math
+import time
+import threading
 import numpy as np
 from pynput import keyboard
 from pid import PID
@@ -50,11 +53,12 @@ flight_ctrl_thread = None
 # ki = 1.2 * ku / tu
 # kd = 3 * ku * tu / 40
 
-YAW_PID = [0.25, 0, 0]
+YAW_PID = [0.58, 0, 0]
 Y_PID = [0.1, 0.1, 0.1]
-X_PID = [0.2, 0, 0]
+X_PID = [0.15, 0, 0]
 
 yaw_pid_array = []
+yaw_pid_time = []
 
 drone = Tello()
 
@@ -75,23 +79,28 @@ try:
 except:
     print("[DRONE] - No feed signal")
 
+
 def guidance_system():
     global CENTRE_X, CENTRE_Y, drone, yaw_pid, y_pid, x_pid, roi, tracker_ret, flt_ctrl_lock, flt_ctrl_active, tracking, manual_control, lock
     try:
         print("[FLT CTRL] - ACTIVE")
-        #yaw_pid = PID(YAW_PID[0], YAW_PID[1], YAW_PID[2], CENTRE_X, -100, 100, True)
-        yaw_pid = PID2(YAW_PID[0], YAW_PID[1], YAW_PID[2], setpoint=CENTRE_X, output_limits=(-100,100))
-        y_pid = PID2(Y_PID[0], Y_PID[1], Y_PID[2], setpoint=CENTRE_Y, output_limits=(-80,100))
-        x_pid = PID2(X_PID[0], X_PID[1], X_PID[2], setpoint=CENTRE_X, output_limits=(-90,90))
+        # yaw_pid = PID(YAW_PID[0], YAW_PID[1], YAW_PID[2], CENTRE_X, -100, 100, True)
+        yaw_pid = PID2(YAW_PID[0], YAW_PID[1], YAW_PID[2],
+                       setpoint=CENTRE_X, output_limits=(-100, 100))
+        y_pid = PID2(Y_PID[0], Y_PID[1], Y_PID[2],
+                     setpoint=CENTRE_Y, output_limits=(-80, 100))
+        x_pid = PID2(X_PID[0], X_PID[1], X_PID[2],
+                     setpoint=CENTRE_X, output_limits=(-70, 70))
 
         while tracking and tracker_ret and manual_control == False:
             x, y, w, h = [int(value) for value in roi]
             targetX = x + w // 2
             targetY = y + h // 2
             roiArea = (x + w) * (y + h) // 2
-            
+
             yaw_velocity = int(yaw_pid(targetX))
-            x_velocity = int(x_pid.compute(targetX))
+            yaw_pid_array.append(yaw_velocity)
+            x_velocity = int(x_pid(targetX))
             y_velocity = int(y_pid(targetY))
 
             if (lock):
@@ -99,12 +108,14 @@ def guidance_system():
             else:
                 z_spd = 0
 
-            #print("YAW: {}".format(yaw_velocity))
+            # print("YAW: {}".format(yaw_velocity))
             if drone.send_rc_control:
-                if (x_velocity > 40):
-                    drone.send_rc_control(-x_velocity, 0, y_velocity, 0)
-                else:
-                    drone.send_rc_control(0, 0, y_velocity, -yaw_velocity)
+                # if (x_velocity > 50):
+                #    drone.send_rc_control(-x_velocity, 0, y_velocity, 0)
+                # else:
+
+                drone.send_rc_control(0, 0, 0, -yaw_velocity)
+            time.sleep(0.01)
 
         flt_ctrl_lock.acquire()
         flt_ctrl_active = False
@@ -113,12 +124,13 @@ def guidance_system():
         print("[FLT CTRL] - TERMINATED")
 
     except Exception as error:
-        #yaw_pid.reset()
+        # yaw_pid.reset()
         flt_ctrl_lock.acquire()
         flt_ctrl_active = False
         manual_control = False
         flt_ctrl_lock.release()
         print("[FLT CTRL] - Error occured\n", error)
+
 
 def manual_controller(key):
     global manual_control, drone, default_dist
@@ -155,19 +167,21 @@ def manual_controller(key):
     except:
         print("[MNUL CTRL] - Invalid key")
 
+
 def on_release(key):
     if key == keyboard.Key.esc:
-        return False 
+        return False
+
 
 def mouse_event_handler(event, x, y, flags, param):
     global tracker, tracking, point_counter, first_point, second_point, reset_track
     if event == cv2.EVENT_LBUTTONDOWN:
         if point_counter == 0:
-            #print("[TRACK] - P1: ({}, {})".format(x,y))
+            # print("[TRACK] - P1: ({}, {})".format(x,y))
             first_point = (x, y)
             point_counter += 1
-        if point_counter == 1 and (x,y) != first_point:
-            #print("[TRACK] - P2: ({}, {})".format(x,y))
+        if point_counter == 1 and (x, y) != first_point:
+            # print("[TRACK] - P2: ({}, {})".format(x,y))
             second_point = (x, y)
             point_counter += 1
         if tracking and point_counter == 2:
@@ -176,12 +190,14 @@ def mouse_event_handler(event, x, y, flags, param):
             second_point = None
             tracking = False
             reset_track = True
-            #print("[TRACK] - ROI RESET")
+            # print("[TRACK] - ROI RESET")
         if point_counter == 2:
             reset_track = False
             tracker = cv2.legacy.TrackerCSRT_create()
-            tracker.init(empty_frame, (first_point[0], first_point[1], abs(second_point[0] - first_point[0]), abs(second_point[1] - first_point[1])))
+            tracker.init(empty_frame, (first_point[0], first_point[1], abs(
+                second_point[0] - first_point[0]), abs(second_point[1] - first_point[1])))
             tracking = True
+
 
 def tracker_control():
     global tracking, empty_frame, tracker, roi, tracker_ret, track_thread_active, reset_track, point_counter, drone
@@ -199,11 +215,14 @@ def tracker_control():
     drone.send_rc_control(0, 0, 0, 0)
     print("[TRACK] - TRACKING TERMINATED")
 
+
 cv2.namedWindow("FEED", cv2.WINDOW_NORMAL)
-cv2.moveWindow("FEED", int((1920 // 2) - (WIDTH // 2)), int(( 1080 // 2) - ( HEIGHT // 2)))
+cv2.moveWindow("FEED", int((1920 // 2) - (WIDTH // 2)),
+               int((1080 // 2) - (HEIGHT // 2)))
 cv2.setMouseCallback("FEED", mouse_event_handler)
 
-key_listener = keyboard.Listener(on_press=manual_controller, on_release=on_release)
+key_listener = keyboard.Listener(
+    on_press=manual_controller, on_release=on_release)
 key_listener.start()
 init_alt = drone.get_barometer()
 
@@ -217,51 +236,73 @@ while True:
         # top right (fps)
         elapsed_time = time.time() - start_time
         fps = 1 / elapsed_time
-        fps_size = cv2.getTextSize("FPS  {}".format(str(int(fps))), FONT, FONT_SCALE, LINE_THICKNESS)[0][0]
-        cv2.putText(frame, "FPS  {}".format(str(int(fps))), (WIDTH - fps_size - 5, 25), FONT, FONT_SCALE, WHITE, LINE_THICKNESS)
+        fps_size = cv2.getTextSize("FPS  {}".format(
+            str(int(fps))), FONT, FONT_SCALE, LINE_THICKNESS)[0][0]
+        cv2.putText(frame, "FPS  {}".format(str(int(fps))), (WIDTH -
+                    fps_size - 5, 25), FONT, FONT_SCALE, WHITE, LINE_THICKNESS)
 
         relative_alt = (drone.get_barometer() - init_alt) * 0.0328
-        spd_mag = int(math.sqrt(drone.get_speed_x() ** 2 + drone.get_speed_y() ** 2 + drone.get_speed_z() ** 2))
+        spd_mag = int(math.sqrt(drone.get_speed_x() ** 2 +
+                      drone.get_speed_y() ** 2 + drone.get_speed_z() ** 2))
 
         # top left
-        cv2.putText(frame, "PWR   {}%".format(drone.get_battery()), (5, 25), FONT, FONT_SCALE, WHITE, LINE_THICKNESS)
-        cv2.putText(frame, "TMP  {} C".format(drone.get_temperature()), (5, 55), FONT, FONT_SCALE, WHITE, LINE_THICKNESS)
+        cv2.putText(frame, "PWR   {}%".format(drone.get_battery()),
+                    (5, 25), FONT, FONT_SCALE, WHITE, LINE_THICKNESS)
+        cv2.putText(frame, "TMP  {} C".format(drone.get_temperature()),
+                    (5, 55), FONT, FONT_SCALE, WHITE, LINE_THICKNESS)
 
         # crosshair
-        cv2.line(frame, (int(WIDTH / 2) - 30, int(HEIGHT / 2)), (int(WIDTH / 2) - 10, int(HEIGHT / 2)), WHITE, 2)
-        cv2.line(frame, (int(WIDTH / 2) + 30, int(HEIGHT / 2)), (int(WIDTH / 2) + 10, int(HEIGHT / 2)), WHITE, 2)
-        cv2.line(frame, (int(WIDTH / 2), int(HEIGHT / 2) - 30), (int(WIDTH / 2), int(HEIGHT / 2) - 10), WHITE, 2)
-        cv2.line(frame, (int(WIDTH / 2), int(HEIGHT / 2) + 30), (int(WIDTH / 2), int(HEIGHT / 2) + 10), WHITE, 2)
+        cv2.line(frame, (int(WIDTH / 2) - 30, int(HEIGHT / 2)),
+                 (int(WIDTH / 2) - 10, int(HEIGHT / 2)), WHITE, 2)
+        cv2.line(frame, (int(WIDTH / 2) + 30, int(HEIGHT / 2)),
+                 (int(WIDTH / 2) + 10, int(HEIGHT / 2)), WHITE, 2)
+        cv2.line(frame, (int(WIDTH / 2), int(HEIGHT / 2) - 30),
+                 (int(WIDTH / 2), int(HEIGHT / 2) - 10), WHITE, 2)
+        cv2.line(frame, (int(WIDTH / 2), int(HEIGHT / 2) + 30),
+                 (int(WIDTH / 2), int(HEIGHT / 2) + 10), WHITE, 2)
 
-        #crosshair stats
-        spd_size = cv2.getTextSize("SPD  {} CM/S".format(abs(spd_mag)), FONT, FONT_SCALE, LINE_THICKNESS)[0][0]
-        cv2.putText(frame, "SPD  {} CM/S".format(abs(spd_mag)), ((WIDTH // 2) - 90 - spd_size, (HEIGHT // 2) - 100), FONT, FONT_SCALE, WHITE, LINE_THICKNESS)
-        cv2.putText(frame, "ALT  {:.1f} FT".format(relative_alt), ((WIDTH // 2) + 90, (HEIGHT // 2) - 100), FONT, FONT_SCALE, WHITE, LINE_THICKNESS)
+        # crosshair stats
+        spd_size = cv2.getTextSize(
+            "SPD  {} CM/S".format(abs(spd_mag)), FONT, FONT_SCALE, LINE_THICKNESS)[0][0]
+        cv2.putText(frame, "SPD  {} CM/S".format(abs(spd_mag)), ((WIDTH // 2) - 90 -
+                    spd_size, (HEIGHT // 2) - 100), FONT, FONT_SCALE, WHITE, LINE_THICKNESS)
+        cv2.putText(frame, "ALT  {:.1f} FT".format(relative_alt), ((
+            WIDTH // 2) + 90, (HEIGHT // 2) - 100), FONT, FONT_SCALE, WHITE, LINE_THICKNESS)
 
         # bottom left telemtry
-        cv2.putText(frame, "SPD  {}  {}  {}".format(drone.get_speed_x(), drone.get_speed_y(), drone.get_speed_z()), (5, HEIGHT - 70), FONT, FONT_SCALE, WHITE, LINE_THICKNESS)
-        cv2.putText(frame, "ACC  {}  {}  {}".format(drone.get_acceleration_x(), drone.get_acceleration_y(), drone.get_acceleration_z()), (5, HEIGHT - 40), FONT, FONT_SCALE, WHITE, LINE_THICKNESS)
-        cv2.putText(frame, "YPR  {}  {}  {}".format(drone.get_yaw(), drone.get_pitch(), drone.get_roll()), (5, HEIGHT - 10), FONT, FONT_SCALE, WHITE, LINE_THICKNESS)
+        cv2.putText(frame, "SPD  {}  {}  {}".format(drone.get_speed_x(), drone.get_speed_y(
+        ), drone.get_speed_z()), (5, HEIGHT - 70), FONT, FONT_SCALE, WHITE, LINE_THICKNESS)
+        cv2.putText(frame, "ACC  {}  {}  {}".format(drone.get_acceleration_x(), drone.get_acceleration_y(
+        ), drone.get_acceleration_z()), (5, HEIGHT - 40), FONT, FONT_SCALE, WHITE, LINE_THICKNESS)
+        cv2.putText(frame, "YPR  {}  {}  {}".format(drone.get_yaw(), drone.get_pitch(
+        ), drone.get_roll()), (5, HEIGHT - 10), FONT, FONT_SCALE, WHITE, LINE_THICKNESS)
 
-        time_size = cv2.getTextSize("T + {}".format(drone.get_flight_time()), FONT, FONT_SCALE, LINE_THICKNESS)[0][0]
-        cv2.putText(frame, "T + {}".format(drone.get_flight_time()), (WIDTH - time_size - 5, 55), FONT, FONT_SCALE, WHITE, LINE_THICKNESS)
-
+        time_size = cv2.getTextSize(
+            "T + {}".format(drone.get_flight_time()), FONT, FONT_SCALE, LINE_THICKNESS)[0][0]
+        cv2.putText(frame, "T + {}".format(drone.get_flight_time()),
+                    (WIDTH - time_size - 5, 55), FONT, FONT_SCALE, WHITE, LINE_THICKNESS)
 
         # bottom compass
         cv2.circle(frame, (WIDTH - 60, HEIGHT - 60), 50, WHITE, 1)
-        cv2.arrowedLine(frame, (WIDTH - 60, HEIGHT - 60), (round(-50 * math.cos(math.radians(drone.get_yaw())) + WIDTH - 60), round((HEIGHT - 60) - (50 * math.sin(math.radians(drone.get_yaw()))))), WHITE, 1, tipLength = .2)
+        cv2.arrowedLine(frame, (WIDTH - 60, HEIGHT - 60), (round(-50 * math.cos(math.radians(drone.get_yaw())) +
+                        WIDTH - 60), round((HEIGHT - 60) - (50 * math.sin(math.radians(drone.get_yaw()))))), WHITE, 1, tipLength=.2)
 
         # top center
         if (manual_control and flt_ctrl_active == False):
-            cv2.rectangle(frame, (WIDTH//2 - 20, 10), (WIDTH//2 + 29, 28), WHITE, -1)
-            cv2.putText(frame, "CTRL", (WIDTH//2 - 20, 25), FONT, FONT_SCALE, BLACK, LINE_THICKNESS)
+            cv2.rectangle(frame, (WIDTH//2 - 20, 10),
+                          (WIDTH//2 + 29, 28), WHITE, -1)
+            cv2.putText(frame, "CTRL", (WIDTH//2 - 20, 25),
+                        FONT, FONT_SCALE, BLACK, LINE_THICKNESS)
         else:
-            cv2.rectangle(frame, (WIDTH//2 - 20, 10), (WIDTH//2 + 31, 28), WHITE, -1)
-            cv2.putText(frame, "AUTO", (WIDTH//2 - 20, 25), FONT, FONT_SCALE, BLACK, LINE_THICKNESS)
+            cv2.rectangle(frame, (WIDTH//2 - 20, 10),
+                          (WIDTH//2 + 31, 28), WHITE, -1)
+            cv2.putText(frame, "AUTO", (WIDTH//2 - 20, 25),
+                        FONT, FONT_SCALE, BLACK, LINE_THICKNESS)
 
         if tracking and track_thread_active == False:
             print("[TRACK] - TRACKING ACTIVE")
-            tracker_thread = threading.Thread(target=tracker_control, daemon=True)
+            tracker_thread = threading.Thread(
+                target=tracker_control, daemon=True)
             tracker_thread.start()
 
         if tracking == False and track_thread_active == False and tracker_thread:
@@ -275,15 +316,21 @@ while True:
             if (CENTRE_X >= x and CENTRE_X <= x + w and CENTRE_Y >= y and CENTRE_Y <= y + h):
                 lock = True
                 roi_colour = RED
-                lock_size = cv2.getTextSize("LOCK", FONT, FONT_SCALE, LINE_THICKNESS)[0][0]
-                cv2.rectangle(frame, (WIDTH // 2 - (lock_size // 2), HEIGHT - 38), (WIDTH // 2 + lock_size - 25, HEIGHT - 20), roi_colour, -1)
-                cv2.putText(frame, "LOCK", (WIDTH // 2 - (lock_size // 2), HEIGHT - 22), FONT, FONT_SCALE, WHITE, LINE_THICKNESS)
+                lock_size = cv2.getTextSize(
+                    "LOCK", FONT, FONT_SCALE, LINE_THICKNESS)[0][0]
+                cv2.rectangle(frame, (WIDTH // 2 - (lock_size // 2), HEIGHT - 38),
+                              (WIDTH // 2 + lock_size - 25, HEIGHT - 20), roi_colour, -1)
+                cv2.putText(frame, "LOCK", (WIDTH // 2 - (lock_size // 2),
+                            HEIGHT - 22), FONT, FONT_SCALE, WHITE, LINE_THICKNESS)
             else:
                 lock = False
                 roi_colour = WHITE
-                trk_size = cv2.getTextSize("TRK", FONT, FONT_SCALE, LINE_THICKNESS)[0][0]
-                cv2.rectangle(frame, (WIDTH // 2 - (trk_size // 2), HEIGHT - 38), (WIDTH // 2 + trk_size - 20, HEIGHT - 20), WHITE, -1)
-                cv2.putText(frame, "TRK", (WIDTH // 2 - (trk_size // 2), HEIGHT - 22), FONT, FONT_SCALE, BLACK, LINE_THICKNESS)
+                trk_size = cv2.getTextSize(
+                    "TRK", FONT, FONT_SCALE, LINE_THICKNESS)[0][0]
+                cv2.rectangle(frame, (WIDTH // 2 - (trk_size // 2), HEIGHT - 38),
+                              (WIDTH // 2 + trk_size - 20, HEIGHT - 20), WHITE, -1)
+                cv2.putText(frame, "TRK", (WIDTH // 2 - (trk_size // 2),
+                            HEIGHT - 22), FONT, FONT_SCALE, BLACK, LINE_THICKNESS)
 
             cv2.rectangle(frame, (x, y), (x + w, y + h), roi_colour, 1)
             # top
@@ -291,12 +338,15 @@ while True:
             # left
             cv2.line(frame, (x, y + h // 2), (0, y + h // 2), roi_colour, 1)
             # right
-            cv2.line(frame, (x + w, y + h // 2), (WIDTH, y + h // 2), roi_colour, 1)
+            cv2.line(frame, (x + w, y + h // 2),
+                     (WIDTH, y + h // 2), roi_colour, 1)
             # bottom
-            cv2.line(frame, (x + w // 2, y + h), (x + w // 2, HEIGHT), roi_colour, 1)
-                
+            cv2.line(frame, (x + w // 2, y + h),
+                     (x + w // 2, HEIGHT), roi_colour, 1)
+
             if flt_ctrl_active == False and manual_control == False:
-                flight_ctrl_thread = threading.Thread(target=guidance_system, daemon=True)
+                flight_ctrl_thread = threading.Thread(
+                    target=guidance_system, daemon=True)
                 flight_ctrl_thread.start()
                 flt_ctrl_active = True
 
@@ -312,7 +362,7 @@ while True:
         break
 
     start_time = time.time()
-    
+
     if (cv2.waitKey(1) & 0xff) == 27:
         break
 
@@ -320,9 +370,8 @@ key_listener.join()
 cv2.destroyAllWindows()
 drone.streamoff()
 drone.end()
+print("[DRONE] - CONNECTION TERMINATED")
 
 if yaw_pid_array:
     plt.plot(yaw_pid_array)
     plt.show()
-
-print("[DRONE] - CONNECTION TERMINATED")
