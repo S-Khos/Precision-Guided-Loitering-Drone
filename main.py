@@ -55,8 +55,8 @@ dive = False
 
 # add derivative to reduce overshoot, add integral to reduce steady state error, add proportional to reduce rise time
 
-YAW_PID = [0.36, 0.00001, 0.14]
-Y_PID = [0.65, 0, 0.15]
+YAW_PID = [0.36, 0.00005, 0.14]
+Y_PID = [0.65, 0.00005, 0.15]
 X_PID = [0.3, 0, 0.12]
 yaw_pid_array = []
 yaw_pid_time = []
@@ -127,7 +127,7 @@ def guidance_system():
                 else:
                     drone.send_rc_control(0, 0, y_velocity, -yaw_velocity)
 
-            # time.sleep(0.01)
+            time.sleep(0.01)
 
         flt_ctrl_lock.acquire()
         flt_ctrl_active = False
@@ -151,6 +151,7 @@ def manual_controller(key):
         if key.char == 'z':
             if manual_control:
                 manual_control = False
+                drone.send_rc_control(0, 0, 0, 0)
             else:
                 manual_control = True
                 drone.send_rc_control(0, 0, 0, 0)
@@ -304,8 +305,8 @@ while True:
 
         # bottom compass
         cv2.circle(frame, (WIDTH - 60, HEIGHT - 60), 50, ui_text_clr, 1)
-        cv2.arrowedLine(frame, (WIDTH - 60, HEIGHT - 60), (round(-50 * math.cos(math.radians(drone.get_yaw())) +
-                        WIDTH - 60), round((HEIGHT - 60) - (50 * math.sin(math.radians(drone.get_yaw()))))), ui_text_clr, 1, tipLength=.2)
+        cv2.arrowedLine(frame, (WIDTH - 60, HEIGHT - 60), (int(50 * math.cos(math.radians(drone.get_yaw() + 90)) +
+                        WIDTH - 60), int((HEIGHT - 60) - (50 * math.sin(math.radians(drone.get_yaw() + 90))))), ui_text_clr, 1, tipLength=.15)  # switch -50 with 50
 
         # top center
         if (manual_control and flt_ctrl_active == False):
