@@ -45,6 +45,7 @@ lock = False
 flt_ctrl_active = False
 flt_ctrl_lock = threading.Lock()
 flight_ctrl_thread = None
+dive = False
 
 # ku = 0.5
 # tu = 1.20
@@ -54,9 +55,9 @@ flight_ctrl_thread = None
 
 # add derivative to reduce overshoot, add integral to reduce steady state error, add proportional to reduce rise time
 
-YAW_PID = [0.31, 0, 0.13]
-Y_PID = [0.4, 0, 0.2]
-X_PID = [0.2, 0, 0.1]
+YAW_PID = [0.34, 0.01, 0.14]
+Y_PID = [0.53, 0, 0.1]
+X_PID = [0.3, 0, 0.12]
 yaw_pid_array = []
 yaw_pid_time = []
 drone = Tello()
@@ -80,12 +81,12 @@ except:
 
 
 def guidance_system():
-    global CENTRE_X, CENTRE_Y, drone, yaw_pid, y_pid, x_pid, roi, tracker_ret, flt_ctrl_lock, flt_ctrl_active, tracking, manual_control, lock
+    global CENTRE_X, CENTRE_Y, drone, yaw_pid, y_pid, x_pid, roi, tracker_ret, flt_ctrl_lock, flt_ctrl_active, tracking, manual_control, lock, dive
     try:
         print("[FLT CTRL] - ACTIVE")
 
         yaw_pid = PID(YAW_PID[0], YAW_PID[1], YAW_PID[2], CENTRE_X, -100, 100)
-        y_pid = PID(Y_PID[0], Y_PID[1], Y_PID[2], CENTRE_Y, -90, 100)
+        y_pid = PID(Y_PID[0], Y_PID[1], Y_PID[2], CENTRE_Y, -100, 100)
         x_pid = PID(X_PID[0], X_PID[1], X_PID[2], CENTRE_X, -80, 80)
 
         while tracking and tracker_ret and manual_control == False:
@@ -102,13 +103,27 @@ def guidance_system():
             yaw_pid_time.append(yaw_time)
 
             if (lock):
-                z_spd = 25
+                z_spd = 70
             else:
                 z_spd = 0
 
             if drone.send_rc_control:
-                if (yaw_velocity >= 50 or yaw_velocity <= -50):
-                    drone.send_rc_control(-x_velocity, 0, y_velocity, 0)
+                # if (yaw_velocity >= 50 or yaw_velocity <= -50):
+                #    if dive:
+                #        drone.send_rc_control(-x_velocity,
+                #                              z_spd, y_velocity, 0)
+                #    else:
+                #        drone.send_rc_control(-x_velocity, 0, y_velocity, 0)
+                # else:
+                #    if dive:
+                #        drone.send_rc_control(0,
+                #                              z_spd, y_velocity, -yaw_velocity)
+                #    else:
+
+                #        drone.send_rc_control(0, 0, y_velocity, -yaw_velocity)
+
+                if dive:
+                    drone.send_rc_control(0, z_spd, y_velocity, -yaw_velocity)
                 else:
                     drone.send_rc_control(0, 0, y_velocity, -yaw_velocity)
 
@@ -131,7 +146,7 @@ def guidance_system():
 
 
 def manual_controller(key):
-    global manual_control, drone, default_dist
+    global manual_control, drone, default_dist, dive
     try:
         if key.char == 'z':
             if manual_control:
@@ -139,6 +154,12 @@ def manual_controller(key):
             else:
                 manual_control = True
                 drone.send_rc_control(0, 0, 0, 0)
+
+        if key.char == 'x':
+            if dive != True:
+                dive = True
+            else:
+                dive = False
 
         if manual_control:
             if key.char == 'i':
