@@ -11,7 +11,7 @@ class PID(object):
         self.error = 0
         self.prev_error = 0
         self.cur_time = init_time if init_time is not None else time.time()
-        self.prev_time = self.cur_time - 1
+        self.prev_time = self.cur_time
         self.time_diff = 0
         self.proportional = 0
         self.integral = 0
@@ -28,10 +28,10 @@ class PID(object):
         self.integral += self.error * (self.time_diff)
         self.derivative = (self.error - self.prev_error) / (self.time_diff)
         self.prev_error = self.error
-        self.prev_time = cur_time
+        self.prev_time = self.cur_time
 
-        self.output = self.kp * self.proportional + \
-            self.ki * self.integral + self.kd * self.derivative
+        self.output = int(self.kp * self.proportional +
+                          self.ki * self.integral + self.kd * self.derivative)
 
         if (self.MAX_SPD is not None):
             if (self.output > self.MAX_SPD):

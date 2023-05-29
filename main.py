@@ -6,7 +6,6 @@ import threading
 import numpy as np
 from pynput import keyboard
 from pid import PID
-from simple_pid import PID as PID2
 import matplotlib.pyplot as plt
 
 init_alt = 0
@@ -18,7 +17,6 @@ WIDTH = 960
 HEIGHT = 720
 CENTRE_X = WIDTH // 2
 CENTRE_Y = HEIGHT // 2
-start_time = time.time()
 FONT = cv2.FONT_HERSHEY_COMPLEX
 FONT_SCALE = .6
 RED = (0, 0, 255)
@@ -26,8 +24,9 @@ GREEN = (0, 255, 0)
 BLUE = (255, 0, 0)
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
+ui_text_clr = GREEN
 LINE_THICKNESS = 1
-roi_colour = WHITE
+roi_colour = ui_text_clr
 manual_control = True
 empty_frame = None
 
@@ -54,17 +53,15 @@ flight_ctrl_thread = None
 # kd = 3 * ku * tu / 40
 
 YAW_PID = [0.3, 0, 0]
-Y_PID = [0.1, 0.1, 0.1]
-X_PID = [0.15, 0, 0]
-
+Y_PID = [0.32, 0, 0]
+X_PID = [0.2, 0, 0]
 yaw_pid_array = []
 yaw_pid_time = []
-
 drone = Tello()
 
 try:
     drone.connect()
-    if (drone.get_battery() < 20):
+    if (drone.get_battery() <= 20):
         print("[DRONE] - Low battery")
         drone.end()
 except:
@@ -86,6 +83,7 @@ def guidance_system():
         print("[FLT CTRL] - ACTIVE")
 
         yaw_pid = PID(YAW_PID[0], YAW_PID[1], YAW_PID[2], CENTRE_X, -100, 100)
+        y_pid = PID(Y_PID[0], Y_PID[1], Y_PID[2], CENTRE_Y, -80, 100)
 
         while tracking and tracker_ret and manual_control == False:
             x, y, w, h = [int(value) for value in roi]
@@ -94,16 +92,18 @@ def guidance_system():
             roiArea = (x + w) * (y + h) // 2
 
             yaw_velocity, yaw_time = yaw_pid.update(targetX)
+            y_velocity, y_time = y_pid.update(targetY)
+
             yaw_pid_array.append(yaw_velocity)
             yaw_pid_time.append(yaw_time)
 
             if (lock):
-                z_spd = 15
+                z_spd = 25
             else:
                 z_spd = 0
 
             if drone.send_rc_control:
-                drone.send_rc_control(0, 0, 0, int(-yaw_velocity))
+                drone.send_rc_control(0, 0, y_velocity, -yaw_velocity)
             time.sleep(0.01)
 
         flt_ctrl_lock.acquire()
@@ -113,11 +113,12 @@ def guidance_system():
         print("[FLT CTRL] - TERMINATED")
 
     except Exception as error:
-        # yaw_pid.reset()
+        yaw_pid.reset()
         flt_ctrl_lock.acquire()
         flt_ctrl_active = False
         manual_control = False
         flt_ctrl_lock.release()
+        drone.send_rc_control(0, 0, 0, 0)
         print("[FLT CTRL] - Error occured\n", error)
 
 
@@ -209,12 +210,12 @@ cv2.namedWindow("FEED", cv2.WINDOW_NORMAL)
 cv2.moveWindow("FEED", int((1920 // 2) - (WIDTH // 2)),
                int((1080 // 2) - (HEIGHT // 2)))
 cv2.setMouseCallback("FEED", mouse_event_handler)
-
 key_listener = keyboard.Listener(
     on_press=manual_controller, on_release=on_release)
 key_listener.start()
 init_alt = drone.get_barometer()
 
+start_time = time.time()
 while True:
     try:
         frame = frame_read.frame
@@ -228,7 +229,7 @@ while True:
         fps_size = cv2.getTextSize("FPS  {}".format(
             str(int(fps))), FONT, FONT_SCALE, LINE_THICKNESS)[0][0]
         cv2.putText(frame, "FPS  {}".format(str(int(fps))), (WIDTH -
-                    fps_size - 5, 25), FONT, FONT_SCALE, WHITE, LINE_THICKNESS)
+                    fps_size - 5, 25), FONT, FONT_SCALE, ui_text_clr, LINE_THICKNESS)
 
         relative_alt = (drone.get_barometer() - init_alt) * 0.0328
         spd_mag = int(math.sqrt(drone.get_speed_x() ** 2 +
@@ -236,55 +237,55 @@ while True:
 
         # top left
         cv2.putText(frame, "PWR   {}%".format(drone.get_battery()),
-                    (5, 25), FONT, FONT_SCALE, WHITE, LINE_THICKNESS)
+                    (5, 25), FONT, FONT_SCALE, ui_text_clr, LINE_THICKNESS)
         cv2.putText(frame, "TMP  {} C".format(drone.get_temperature()),
-                    (5, 55), FONT, FONT_SCALE, WHITE, LINE_THICKNESS)
+                    (5, 55), FONT, FONT_SCALE, ui_text_clr, LINE_THICKNESS)
 
         # crosshair
         cv2.line(frame, (int(WIDTH / 2) - 30, int(HEIGHT / 2)),
-                 (int(WIDTH / 2) - 10, int(HEIGHT / 2)), WHITE, 2)
+                 (int(WIDTH / 2) - 10, int(HEIGHT / 2)), ui_text_clr, 2)
         cv2.line(frame, (int(WIDTH / 2) + 30, int(HEIGHT / 2)),
-                 (int(WIDTH / 2) + 10, int(HEIGHT / 2)), WHITE, 2)
+                 (int(WIDTH / 2) + 10, int(HEIGHT / 2)), ui_text_clr, 2)
         cv2.line(frame, (int(WIDTH / 2), int(HEIGHT / 2) - 30),
-                 (int(WIDTH / 2), int(HEIGHT / 2) - 10), WHITE, 2)
+                 (int(WIDTH / 2), int(HEIGHT / 2) - 10), ui_text_clr, 2)
         cv2.line(frame, (int(WIDTH / 2), int(HEIGHT / 2) + 30),
-                 (int(WIDTH / 2), int(HEIGHT / 2) + 10), WHITE, 2)
+                 (int(WIDTH / 2), int(HEIGHT / 2) + 10), ui_text_clr, 2)
 
         # crosshair stats
         spd_size = cv2.getTextSize(
             "SPD  {} CM/S".format(abs(spd_mag)), FONT, FONT_SCALE, LINE_THICKNESS)[0][0]
         cv2.putText(frame, "SPD  {} CM/S".format(abs(spd_mag)), ((WIDTH // 2) - 90 -
-                    spd_size, (HEIGHT // 2) - 100), FONT, FONT_SCALE, WHITE, LINE_THICKNESS)
+                    spd_size, (HEIGHT // 2) - 100), FONT, FONT_SCALE, ui_text_clr, LINE_THICKNESS)
         cv2.putText(frame, "ALT  {:.1f} FT".format(relative_alt), ((
-            WIDTH // 2) + 90, (HEIGHT // 2) - 100), FONT, FONT_SCALE, WHITE, LINE_THICKNESS)
+            WIDTH // 2) + 90, (HEIGHT // 2) - 100), FONT, FONT_SCALE, ui_text_clr, LINE_THICKNESS)
 
         # bottom left telemtry
         cv2.putText(frame, "SPD  {}  {}  {}".format(drone.get_speed_x(), drone.get_speed_y(
-        ), drone.get_speed_z()), (5, HEIGHT - 70), FONT, FONT_SCALE, WHITE, LINE_THICKNESS)
+        ), drone.get_speed_z()), (5, HEIGHT - 70), FONT, FONT_SCALE, ui_text_clr, LINE_THICKNESS)
         cv2.putText(frame, "ACC  {}  {}  {}".format(drone.get_acceleration_x(), drone.get_acceleration_y(
-        ), drone.get_acceleration_z()), (5, HEIGHT - 40), FONT, FONT_SCALE, WHITE, LINE_THICKNESS)
+        ), drone.get_acceleration_z()), (5, HEIGHT - 40), FONT, FONT_SCALE, ui_text_clr, LINE_THICKNESS)
         cv2.putText(frame, "YPR  {}  {}  {}".format(drone.get_yaw(), drone.get_pitch(
-        ), drone.get_roll()), (5, HEIGHT - 10), FONT, FONT_SCALE, WHITE, LINE_THICKNESS)
+        ), drone.get_roll()), (5, HEIGHT - 10), FONT, FONT_SCALE, ui_text_clr, LINE_THICKNESS)
 
         time_size = cv2.getTextSize(
             "T + {}".format(drone.get_flight_time()), FONT, FONT_SCALE, LINE_THICKNESS)[0][0]
         cv2.putText(frame, "T + {}".format(drone.get_flight_time()),
-                    (WIDTH - time_size - 5, 55), FONT, FONT_SCALE, WHITE, LINE_THICKNESS)
+                    (WIDTH - time_size - 5, 55), FONT, FONT_SCALE, ui_text_clr, LINE_THICKNESS)
 
         # bottom compass
-        cv2.circle(frame, (WIDTH - 60, HEIGHT - 60), 50, WHITE, 1)
+        cv2.circle(frame, (WIDTH - 60, HEIGHT - 60), 50, ui_text_clr, 1)
         cv2.arrowedLine(frame, (WIDTH - 60, HEIGHT - 60), (round(-50 * math.cos(math.radians(drone.get_yaw())) +
-                        WIDTH - 60), round((HEIGHT - 60) - (50 * math.sin(math.radians(drone.get_yaw()))))), WHITE, 1, tipLength=.2)
+                        WIDTH - 60), round((HEIGHT - 60) - (50 * math.sin(math.radians(drone.get_yaw()))))), ui_text_clr, 1, tipLength=.2)
 
         # top center
         if (manual_control and flt_ctrl_active == False):
             cv2.rectangle(frame, (WIDTH//2 - 20, 10),
-                          (WIDTH//2 + 29, 28), WHITE, -1)
+                          (WIDTH//2 + 29, 28), ui_text_clr, -1)
             cv2.putText(frame, "CTRL", (WIDTH//2 - 20, 25),
                         FONT, FONT_SCALE, BLACK, LINE_THICKNESS)
         else:
             cv2.rectangle(frame, (WIDTH//2 - 20, 10),
-                          (WIDTH//2 + 31, 28), WHITE, -1)
+                          (WIDTH//2 + 31, 28), ui_text_clr, -1)
             cv2.putText(frame, "AUTO", (WIDTH//2 - 20, 25),
                         FONT, FONT_SCALE, BLACK, LINE_THICKNESS)
 
@@ -313,11 +314,11 @@ while True:
                             HEIGHT - 22), FONT, FONT_SCALE, WHITE, LINE_THICKNESS)
             else:
                 lock = False
-                roi_colour = WHITE
+                roi_colour = ui_text_clr
                 trk_size = cv2.getTextSize(
                     "TRK", FONT, FONT_SCALE, LINE_THICKNESS)[0][0]
                 cv2.rectangle(frame, (WIDTH // 2 - (trk_size // 2), HEIGHT - 38),
-                              (WIDTH // 2 + trk_size - 20, HEIGHT - 20), WHITE, -1)
+                              (WIDTH // 2 + trk_size - 20, HEIGHT - 20), ui_text_clr, -1)
                 cv2.putText(frame, "TRK", (WIDTH // 2 - (trk_size // 2),
                             HEIGHT - 22), FONT, FONT_SCALE, BLACK, LINE_THICKNESS)
 
@@ -351,7 +352,6 @@ while True:
         break
 
     start_time = time.time()
-
     if (cv2.waitKey(1) & 0xff) == 27:
         break
 
@@ -362,5 +362,5 @@ drone.end()
 print("[DRONE] - CONNECTION TERMINATED")
 
 if yaw_pid_array:
-    plt.plot(yaw_pid_array, yaw_pid_time)
+    plt.plot(yaw_pid_time, yaw_pid_array)
     plt.show()
