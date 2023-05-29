@@ -52,9 +52,11 @@ flight_ctrl_thread = None
 # ki = 1.2 * ku / tu
 # kd = 3 * ku * tu / 40
 
-YAW_PID = [0.3, 0, 0]
-Y_PID = [0.32, 0, 0]
-X_PID = [0.2, 0, 0]
+# add derivative to reduce overshoot, add integral to reduce steady state error, add proportional to reduce rise time
+
+YAW_PID = [0.31, 0, 0.13]
+Y_PID = [0.4, 0, 0.2]
+X_PID = [0.2, 0, 0.1]
 yaw_pid_array = []
 yaw_pid_time = []
 drone = Tello()
@@ -83,7 +85,8 @@ def guidance_system():
         print("[FLT CTRL] - ACTIVE")
 
         yaw_pid = PID(YAW_PID[0], YAW_PID[1], YAW_PID[2], CENTRE_X, -100, 100)
-        y_pid = PID(Y_PID[0], Y_PID[1], Y_PID[2], CENTRE_Y, -80, 100)
+        y_pid = PID(Y_PID[0], Y_PID[1], Y_PID[2], CENTRE_Y, -90, 100)
+        x_pid = PID(X_PID[0], X_PID[1], X_PID[2], CENTRE_X, -80, 80)
 
         while tracking and tracker_ret and manual_control == False:
             x, y, w, h = [int(value) for value in roi]
@@ -93,6 +96,7 @@ def guidance_system():
 
             yaw_velocity, yaw_time = yaw_pid.update(targetX)
             y_velocity, y_time = y_pid.update(targetY)
+            x_velocity, x_time = x_pid.update(targetX)
 
             yaw_pid_array.append(yaw_velocity)
             yaw_pid_time.append(yaw_time)
@@ -103,7 +107,11 @@ def guidance_system():
                 z_spd = 0
 
             if drone.send_rc_control:
-                drone.send_rc_control(0, 0, y_velocity, -yaw_velocity)
+                if (yaw_velocity >= 50 or yaw_velocity <= -50):
+                    drone.send_rc_control(-x_velocity, 0, y_velocity, 0)
+                else:
+                    drone.send_rc_control(0, 0, y_velocity, -yaw_velocity)
+
             time.sleep(0.01)
 
         flt_ctrl_lock.acquire()
@@ -242,13 +250,13 @@ while True:
                     (5, 55), FONT, FONT_SCALE, ui_text_clr, LINE_THICKNESS)
 
         # crosshair
-        cv2.line(frame, (int(WIDTH / 2) - 30, int(HEIGHT / 2)),
+        cv2.line(frame, (int(WIDTH / 2) - 25, int(HEIGHT / 2)),
                  (int(WIDTH / 2) - 10, int(HEIGHT / 2)), ui_text_clr, 2)
-        cv2.line(frame, (int(WIDTH / 2) + 30, int(HEIGHT / 2)),
+        cv2.line(frame, (int(WIDTH / 2) + 25, int(HEIGHT / 2)),
                  (int(WIDTH / 2) + 10, int(HEIGHT / 2)), ui_text_clr, 2)
-        cv2.line(frame, (int(WIDTH / 2), int(HEIGHT / 2) - 30),
+        cv2.line(frame, (int(WIDTH / 2), int(HEIGHT / 2) - 25),
                  (int(WIDTH / 2), int(HEIGHT / 2) - 10), ui_text_clr, 2)
-        cv2.line(frame, (int(WIDTH / 2), int(HEIGHT / 2) + 30),
+        cv2.line(frame, (int(WIDTH / 2), int(HEIGHT / 2) + 25),
                  (int(WIDTH / 2), int(HEIGHT / 2) + 10), ui_text_clr, 2)
 
         # crosshair stats
