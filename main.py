@@ -55,8 +55,8 @@ dive = False
 
 # add derivative to reduce overshoot, add integral to reduce steady state error, add proportional to reduce rise time
 
-YAW_PID = [0.34, 0.01, 0.14]
-Y_PID = [0.53, 0, 0.1]
+YAW_PID = [0.36, 0.00001, 0.14]
+Y_PID = [0.65, 0, 0.15]
 X_PID = [0.3, 0, 0.12]
 yaw_pid_array = []
 yaw_pid_time = []
@@ -99,11 +99,11 @@ def guidance_system():
             y_velocity, y_time = y_pid.update(targetY)
             x_velocity, x_time = x_pid.update(targetX)
 
-            yaw_pid_array.append(yaw_velocity)
-            yaw_pid_time.append(yaw_time)
+            yaw_pid_array.append(y_velocity)
+            yaw_pid_time.append(y_time)
 
             if (lock):
-                z_spd = 70
+                z_spd = 55
             else:
                 z_spd = 0
 
@@ -127,7 +127,7 @@ def guidance_system():
                 else:
                     drone.send_rc_control(0, 0, y_velocity, -yaw_velocity)
 
-            time.sleep(0.01)
+            # time.sleep(0.01)
 
         flt_ctrl_lock.acquire()
         flt_ctrl_active = False
@@ -222,12 +222,13 @@ def tracker_control():
     global tracking, empty_frame, tracker, roi, tracker_ret, track_thread_active, reset_track, point_counter, drone
     tracker_lock.acquire()
     track_thread_active = True
+    print("[TRACK] - TRACKING ACTIVE")
     while tracking:
         tracker_ret, roi = tracker.update(empty_frame)
         if tracker_ret == False or reset_track:
             tracking = False
             point_counter = 0
-
+        # time.sleep(0.01)
     track_thread_active = False
     tracker_thread = None
     tracker_lock.release()
@@ -319,7 +320,6 @@ while True:
                         FONT, FONT_SCALE, BLACK, LINE_THICKNESS)
 
         if tracking and track_thread_active == False:
-            print("[TRACK] - TRACKING ACTIVE")
             tracker_thread = threading.Thread(
                 target=tracker_control, daemon=True)
             tracker_thread.start()
