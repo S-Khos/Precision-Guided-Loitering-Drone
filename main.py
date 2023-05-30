@@ -49,8 +49,8 @@ dive = False
 
 # add derivative to reduce overshoot, add integral to reduce steady state error, add proportional to reduce rise time
 
-YAW_PID = [0.34, 0.0005, 0]
-Y_PID = [0.5, 0, 0]
+YAW_PID = [0.4, 0.000001, 0.1]
+Y_PID = [1, 0, 0.1]
 X_PID = [0.3, 0, 0.12]
 yaw_pid_array = []
 yaw_pid_time = []
