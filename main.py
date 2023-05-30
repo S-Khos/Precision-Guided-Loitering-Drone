@@ -47,16 +47,10 @@ flt_ctrl_lock = threading.Lock()
 flight_ctrl_thread = None
 dive = False
 
-# ku = 0.5
-# tu = 1.20
-# kp = 0.6 * ku
-# ki = 1.2 * ku / tu
-# kd = 3 * ku * tu / 40
-
 # add derivative to reduce overshoot, add integral to reduce steady state error, add proportional to reduce rise time
 
-YAW_PID = [0.36, 0.00005, 0.14]
-Y_PID = [0.65, 0.00005, 0.15]
+YAW_PID = [0.34, 0.0005, 0]
+Y_PID = [0.5, 0, 0]
 X_PID = [0.3, 0, 0.12]
 yaw_pid_array = []
 yaw_pid_time = []
@@ -70,11 +64,11 @@ try:
 except:
     print("[DRONE] - Connection Error")
 
-time.sleep(1)
+time.sleep(0.5)
 
 try:
     drone.streamon()
-    time.sleep(1)
+    time.sleep(0.5)
     frame_read = drone.get_frame_read()
 except:
     print("[DRONE] - No feed signal")
@@ -103,25 +97,11 @@ def guidance_system():
             yaw_pid_time.append(y_time)
 
             if (lock):
-                z_spd = 55
+                z_spd = 60
             else:
                 z_spd = 0
 
             if drone.send_rc_control:
-                # if (yaw_velocity >= 50 or yaw_velocity <= -50):
-                #    if dive:
-                #        drone.send_rc_control(-x_velocity,
-                #                              z_spd, y_velocity, 0)
-                #    else:
-                #        drone.send_rc_control(-x_velocity, 0, y_velocity, 0)
-                # else:
-                #    if dive:
-                #        drone.send_rc_control(0,
-                #                              z_spd, y_velocity, -yaw_velocity)
-                #    else:
-
-                #        drone.send_rc_control(0, 0, y_velocity, -yaw_velocity)
-
                 if dive:
                     drone.send_rc_control(0, z_spd, y_velocity, -yaw_velocity)
                 else:
@@ -273,14 +253,14 @@ while True:
                     (5, 55), FONT, FONT_SCALE, ui_text_clr, LINE_THICKNESS)
 
         # crosshair
-        cv2.line(frame, (int(WIDTH / 2) - 25, int(HEIGHT / 2)),
-                 (int(WIDTH / 2) - 10, int(HEIGHT / 2)), ui_text_clr, 2)
-        cv2.line(frame, (int(WIDTH / 2) + 25, int(HEIGHT / 2)),
-                 (int(WIDTH / 2) + 10, int(HEIGHT / 2)), ui_text_clr, 2)
-        cv2.line(frame, (int(WIDTH / 2), int(HEIGHT / 2) - 25),
-                 (int(WIDTH / 2), int(HEIGHT / 2) - 10), ui_text_clr, 2)
-        cv2.line(frame, (int(WIDTH / 2), int(HEIGHT / 2) + 25),
-                 (int(WIDTH / 2), int(HEIGHT / 2) + 10), ui_text_clr, 2)
+        cv2.line(frame, (int(WIDTH / 2) - 20, int(HEIGHT / 2)),
+                 (int(WIDTH / 2) - 5, int(HEIGHT / 2)), ui_text_clr, 2)
+        cv2.line(frame, (int(WIDTH / 2) + 20, int(HEIGHT / 2)),
+                 (int(WIDTH / 2) + 5, int(HEIGHT / 2)), ui_text_clr, 2)
+        cv2.line(frame, (int(WIDTH / 2), int(HEIGHT / 2) - 20),
+                 (int(WIDTH / 2), int(HEIGHT / 2) - 5), ui_text_clr, 2)
+        cv2.line(frame, (int(WIDTH / 2), int(HEIGHT / 2) + 20),
+                 (int(WIDTH / 2), int(HEIGHT / 2) + 5), ui_text_clr, 2)
 
         # crosshair stats
         spd_size = cv2.getTextSize(
@@ -305,7 +285,7 @@ while True:
 
         # bottom compass
         cv2.circle(frame, (WIDTH - 60, HEIGHT - 60), 50, ui_text_clr, 1)
-        cv2.arrowedLine(frame, (WIDTH - 60, HEIGHT - 60), (int(50 * math.cos(math.radians(drone.get_yaw() + 90)) +
+        cv2.arrowedLine(frame, (WIDTH - 60, HEIGHT - 60), (int(-50 * math.cos(math.radians(drone.get_yaw() + 90)) +
                         WIDTH - 60), int((HEIGHT - 60) - (50 * math.sin(math.radians(drone.get_yaw() + 90))))), ui_text_clr, 1, tipLength=.15)  # switch -50 with 50
 
         # top center
@@ -331,9 +311,8 @@ while True:
 
         # active tracking / lock
         if tracker_ret and tracking:
-            # color the roi red when it is close to the centre
             x, y, w, h = [int(value) for value in roi]
-            if (CENTRE_X >= x and CENTRE_X <= x + w and CENTRE_Y >= y and CENTRE_Y <= y + h):
+            if (CENTRE_X > x and CENTRE_X < x + w and CENTRE_Y > y and CENTRE_Y < y + h):
                 lock = True
                 roi_colour = RED
                 lock_size = cv2.getTextSize(
@@ -352,7 +331,8 @@ while True:
                 cv2.putText(frame, "TRK", (WIDTH // 2 - (trk_size // 2),
                             HEIGHT - 22), FONT, FONT_SCALE, BLACK, LINE_THICKNESS)
 
-            cv2.rectangle(frame, (x, y), (x + w, y + h), roi_colour, 1)
+            cv2.rectangle(frame, (x, y), (x + w, y + h), roi_colour, 2)
+            cv2.circle(frame, (x + w // 2, y + h // 2), 5, roi_colour, -1)
             # top
             cv2.line(frame, (x + w // 2, y), (x + w // 2, 0), roi_colour, 1)
             # left
