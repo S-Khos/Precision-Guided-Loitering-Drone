@@ -49,6 +49,6 @@ class PID(object):
         self.derivative = 0
         self.proportional = 0
         self.output = 0
-        self.cur_time = 0
-        self.prev_time = 0
+        self.cur_time = None
+        self.prev_time = None
         self.time_diff = 0

@@ -24,7 +24,7 @@ GREEN = (0, 255, 0)
 BLUE = (255, 0, 0)
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
-ui_text_clr = GREEN
+ui_text_clr = WHITE
 LINE_THICKNESS = 1
 roi_colour = ui_text_clr
 manual_control = True
@@ -49,8 +49,8 @@ dive = False
 
 # add derivative to reduce overshoot, add integral to reduce steady state error, add proportional to reduce rise time
 
-YAW_PID = [0.4, 0.000001, 0.1]
-Y_PID = [1, 0, 0.1]
+YAW_PID = [0.35, 0.1, 0.17]  # 0.32, 0, 0.06
+Y_PID = [1, 0.1, 0.3]  # 0.8,0,0.16,
 X_PID = [0.3, 0, 0.12]
 yaw_pid_array = []
 yaw_pid_time = []
@@ -76,6 +76,7 @@ except:
 
 def guidance_system():
     global CENTRE_X, CENTRE_Y, drone, yaw_pid, y_pid, x_pid, roi, tracker_ret, flt_ctrl_lock, flt_ctrl_active, tracking, manual_control, lock, dive
+
     try:
         print("[FLT CTRL] - ACTIVE")
 
@@ -96,19 +97,16 @@ def guidance_system():
             yaw_pid_array.append(y_velocity)
             yaw_pid_time.append(y_time)
 
-            if (lock):
-                z_spd = 60
-            else:
-                z_spd = 0
-
             if drone.send_rc_control:
                 if dive:
-                    drone.send_rc_control(0, z_spd, y_velocity, -yaw_velocity)
+                    drone.send_rc_control(0, 70, y_velocity, -yaw_velocity)
                 else:
                     drone.send_rc_control(0, 0, y_velocity, -yaw_velocity)
 
             time.sleep(0.01)
 
+        yaw_pid.reset()
+        y_pid.reset()
         flt_ctrl_lock.acquire()
         flt_ctrl_active = False
         flt_ctrl_lock.release()
@@ -204,12 +202,18 @@ def tracker_control():
     tracker_lock.acquire()
     track_thread_active = True
     print("[TRACK] - TRACKING ACTIVE")
-    while tracking:
-        tracker_ret, roi = tracker.update(empty_frame)
-        if tracker_ret == False or reset_track:
-            tracking = False
-            point_counter = 0
-        # time.sleep(0.01)
+    try:
+        while tracking:
+            tracker_ret, roi = tracker.update(empty_frame)
+            if tracker_ret == False or reset_track:
+                tracking = False
+                point_counter = 0
+            # time.sleep(0.01)
+    except:
+        print("[TRACK] - Invalid Coordinates")
+        tracking = False
+        point_counter = 0
+
     track_thread_active = False
     tracker_thread = None
     tracker_lock.release()
@@ -227,12 +231,13 @@ key_listener.start()
 init_alt = drone.get_barometer()
 
 start_time = time.time()
-while True:
+while frame_read:
     try:
         frame = frame_read.frame
         timer = cv2.getTickCount()
-        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         empty_frame = frame.copy()
+        empty_frame = cv2.cvtColor(empty_frame, cv2.COLOR_BGR2RGB)
+        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
         # top right (fps)
         elapsed_time = time.time() - start_time
@@ -254,13 +259,13 @@ while True:
 
         # crosshair
         cv2.line(frame, (int(WIDTH / 2) - 20, int(HEIGHT / 2)),
-                 (int(WIDTH / 2) - 5, int(HEIGHT / 2)), ui_text_clr, 2)
+                 (int(WIDTH / 2) - 10, int(HEIGHT / 2)), ui_text_clr, 2)
         cv2.line(frame, (int(WIDTH / 2) + 20, int(HEIGHT / 2)),
-                 (int(WIDTH / 2) + 5, int(HEIGHT / 2)), ui_text_clr, 2)
+                 (int(WIDTH / 2) + 10, int(HEIGHT / 2)), ui_text_clr, 2)
         cv2.line(frame, (int(WIDTH / 2), int(HEIGHT / 2) - 20),
-                 (int(WIDTH / 2), int(HEIGHT / 2) - 5), ui_text_clr, 2)
+                 (int(WIDTH / 2), int(HEIGHT / 2) - 10), ui_text_clr, 2)
         cv2.line(frame, (int(WIDTH / 2), int(HEIGHT / 2) + 20),
-                 (int(WIDTH / 2), int(HEIGHT / 2) + 5), ui_text_clr, 2)
+                 (int(WIDTH / 2), int(HEIGHT / 2) + 10), ui_text_clr, 2)
 
         # crosshair stats
         spd_size = cv2.getTextSize(
@@ -332,17 +337,17 @@ while True:
                             HEIGHT - 22), FONT, FONT_SCALE, BLACK, LINE_THICKNESS)
 
             cv2.rectangle(frame, (x, y), (x + w, y + h), roi_colour, 2)
-            cv2.circle(frame, (x + w // 2, y + h // 2), 5, roi_colour, -1)
+            cv2.circle(frame, (x + w // 2, y + h // 2), 3, roi_colour, -1)
             # top
-            cv2.line(frame, (x + w // 2, y), (x + w // 2, 0), roi_colour, 1)
+            cv2.line(frame, (x + w // 2, y), (x + w // 2, 0), WHITE, 1)
             # left
-            cv2.line(frame, (x, y + h // 2), (0, y + h // 2), roi_colour, 1)
+            cv2.line(frame, (x, y + h // 2), (0, y + h // 2), WHITE, 1)
             # right
             cv2.line(frame, (x + w, y + h // 2),
-                     (WIDTH, y + h // 2), roi_colour, 1)
+                     (WIDTH, y + h // 2), WHITE, 1)
             # bottom
             cv2.line(frame, (x + w // 2, y + h),
-                     (x + w // 2, HEIGHT), roi_colour, 1)
+                     (x + w // 2, HEIGHT), WHITE, 1)
 
             if flt_ctrl_active == False and manual_control == False:
                 flight_ctrl_thread = threading.Thread(
