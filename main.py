@@ -26,7 +26,6 @@ WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
 ui_text_clr = WHITE
 LINE_THICKNESS = 1
-roi_colour = ui_text_clr
 manual_control = True
 empty_frame = None
 
@@ -49,9 +48,9 @@ dive = False
 
 # add derivative to reduce overshoot, add integral to reduce steady state error, add proportional to reduce rise time
 
-YAW_PID = [0.35, 0.1, 0.17]  # 0.32, 0, 0.06
-Y_PID = [1, 0.1, 0.3]  # 0.8,0,0.16,
-X_PID = [0.3, 0, 0.12]
+YAW_PID = [0.32, 0.05, 0.11]  # 0.32, 0, 0.06
+Y_PID = [1.3, 0.18, 0.1]  # 0.1, 0.3, 0.3,
+X_PID = [0.2, 0.0, 0.12]
 yaw_pid_array = []
 yaw_pid_time = []
 drone = Tello()
@@ -81,32 +80,30 @@ def guidance_system():
         print("[FLT CTRL] - ACTIVE")
 
         yaw_pid = PID(YAW_PID[0], YAW_PID[1], YAW_PID[2], CENTRE_X, -100, 100)
-        y_pid = PID(Y_PID[0], Y_PID[1], Y_PID[2], CENTRE_Y, -100, 100)
         x_pid = PID(X_PID[0], X_PID[1], X_PID[2], CENTRE_X, -80, 80)
+        y_pid = PID(Y_PID[0], Y_PID[1], Y_PID[2], CENTRE_Y, -100, 100)
 
         while tracking and tracker_ret and manual_control == False:
             x, y, w, h = [int(value) for value in roi]
             targetX = x + w // 2
             targetY = y + h // 2
-            roiArea = (x + w) * (y + h) // 2
 
             yaw_velocity, yaw_time = yaw_pid.update(targetX)
-            y_velocity, y_time = y_pid.update(targetY)
             x_velocity, x_time = x_pid.update(targetX)
+            y_velocity, y_time = y_pid.update(targetY)
 
-            yaw_pid_array.append(y_velocity)
-            yaw_pid_time.append(y_time)
+            yaw_pid_array.append(yaw_velocity)
+            yaw_pid_time.append(yaw_time)
 
             if drone.send_rc_control:
-                if dive:
-                    drone.send_rc_control(0, 70, y_velocity, -yaw_velocity)
-                else:
-                    drone.send_rc_control(0, 0, y_velocity, -yaw_velocity)
+                drone.send_rc_control(-x_velocity if abs(x_velocity)
+                                      > 60 else 0, 90 if abs(relative_alt) > .6 and dive else 0, y_velocity, -yaw_velocity)
 
             time.sleep(0.01)
 
         yaw_pid.reset()
         y_pid.reset()
+        x_pid.reset()
         flt_ctrl_lock.acquire()
         flt_ctrl_active = False
         flt_ctrl_lock.release()
@@ -319,16 +316,14 @@ while frame_read:
             x, y, w, h = [int(value) for value in roi]
             if (CENTRE_X > x and CENTRE_X < x + w and CENTRE_Y > y and CENTRE_Y < y + h):
                 lock = True
-                roi_colour = RED
                 lock_size = cv2.getTextSize(
                     "LOCK", FONT, FONT_SCALE, LINE_THICKNESS)[0][0]
                 cv2.rectangle(frame, (WIDTH // 2 - (lock_size // 2), HEIGHT - 38),
-                              (WIDTH // 2 + lock_size - 25, HEIGHT - 20), roi_colour, -1)
+                              (WIDTH // 2 + lock_size - 25, HEIGHT - 20), ui_text_clr, -1)
                 cv2.putText(frame, "LOCK", (WIDTH // 2 - (lock_size // 2),
                             HEIGHT - 22), FONT, FONT_SCALE, WHITE, LINE_THICKNESS)
             else:
                 lock = False
-                roi_colour = ui_text_clr
                 trk_size = cv2.getTextSize(
                     "TRK", FONT, FONT_SCALE, LINE_THICKNESS)[0][0]
                 cv2.rectangle(frame, (WIDTH // 2 - (trk_size // 2), HEIGHT - 38),
@@ -336,12 +331,14 @@ while frame_read:
                 cv2.putText(frame, "TRK", (WIDTH // 2 - (trk_size // 2),
                             HEIGHT - 22), FONT, FONT_SCALE, BLACK, LINE_THICKNESS)
 
-            cv2.rectangle(frame, (x, y), (x + w, y + h), roi_colour, 2)
-            cv2.circle(frame, (x + w // 2, y + h // 2), 3, roi_colour, -1)
+            cv2.rectangle(frame, (x, y), (x + w, y + h),
+                          RED if dive else ui_text_clr, 2)
+            cv2.circle(frame, (x + w // 2, y + h // 2), 3,
+                       RED if dive else ui_text_clr, -1)
             # top
-            cv2.line(frame, (x + w // 2, y), (x + w // 2, 0), WHITE, 1)
+            cv2.line(frame, (x + w // 2, y), (x + w // 2, 0), ui_text_clr, 1)
             # left
-            cv2.line(frame, (x, y + h // 2), (0, y + h // 2), WHITE, 1)
+            cv2.line(frame, (x, y + h // 2), (0, y + h // 2), ui_text_clr, 1)
             # right
             cv2.line(frame, (x + w, y + h // 2),
                      (WIDTH, y + h // 2), WHITE, 1)
