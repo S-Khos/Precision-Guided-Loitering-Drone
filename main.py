@@ -10,6 +10,7 @@ import matplotlib.pyplot as plt
 
 init_alt = 0
 relative_alt = 0
+altitude = 0
 spd_mag = 0
 default_dist = 30
 
@@ -77,7 +78,7 @@ except:
 
 
 def guidance_system():
-    global CENTRE_X, CENTRE_Y, drone, yaw_pid, y_pid, x_pid, roi, tracker_ret, flt_ctrl_lock, flt_ctrl_active, tracking, manual_control, lock, dive
+    global CENTRE_X, CENTRE_Y, drone, yaw_pid, y_pid, x_pid, roi, tracker_ret, flt_ctrl_lock, flt_ctrl_active, tracking, manual_control, lock, dive, altitude
 
     try:
         print("[FLT CTRL] - ACTIVE")
@@ -100,7 +101,7 @@ def guidance_system():
 
             if drone.send_rc_control:
                 drone.send_rc_control(-x_velocity if abs(x_velocity)
-                                      > 60 else 0, 90 if abs(relative_alt) > .6 and dive else 0, y_velocity, -yaw_velocity)
+                                      > 60 else 0, 90 if altitude > 1 and dive else 0, y_velocity, -yaw_velocity)
 
             time.sleep(0.01)
 
@@ -248,7 +249,8 @@ while frame_read:
         cv2.putText(frame, "FPS  {}".format(str(int(fps))), (WIDTH -
                     fps_size - 5, 25), FONT, FONT_SCALE, ui_text_clr, LINE_THICKNESS)
 
-        relative_alt = (drone.get_barometer() - init_alt) * 0.0328
+        # relative_alt = (drone.get_barometer() - init_alt) * 0.0328
+        altitude = drone.get_distance_tof() / 30.48
         spd_mag = int(math.sqrt(drone.get_speed_x() ** 2 +
                       drone.get_speed_y() ** 2 + drone.get_speed_z() ** 2))
 
