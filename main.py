@@ -31,7 +31,7 @@ empty_frame = None
 
 tracker_lock = threading.Lock()
 track_thread_active = False
-reset_track = False
+reset_track = True
 tracker_thread = None
 tracking = False
 roi = None
@@ -40,6 +40,9 @@ first_point = None
 second_point = None
 point_counter = 0
 lock = False
+roi_size = [100, 100]
+roi_delta = 50
+cursor_pos = [0, 0]
 
 flt_ctrl_active = False
 flt_ctrl_lock = threading.Lock()
@@ -169,29 +172,28 @@ def on_release(key):
 
 
 def mouse_event_handler(event, x, y, flags, param):
-    global tracker, tracking, point_counter, first_point, second_point, reset_track
+    global tracker, tracking, point_counter, first_point, second_point, reset_track, cursor_pos, roi_size
+
+    cursor_pos[0] = x - roi_size[0] // 2
+    cursor_pos[1] = y - roi_size[1] // 2
+
+    if event == cv2.EVENT_MBUTTONDOWN:
+        roi_size[0] += roi_delta
+        roi_size[1] += roi_delta
+
+    if event == cv2.EVENT_MBUTTONDBLCLK:
+        roi_size[0] -= roi_delta
+        roi_size[1] -= roi_delta
+
     if event == cv2.EVENT_LBUTTONDOWN:
-        if point_counter == 0:
-            # print("[TRACK] - P1: ({}, {})".format(x,y))
-            first_point = (x, y)
-            point_counter += 1
-        if point_counter == 1 and (x, y) != first_point:
-            # print("[TRACK] - P2: ({}, {})".format(x,y))
-            second_point = (x, y)
-            point_counter += 1
-        if tracking and point_counter == 2:
-            point_counter = 0
-            first_point = None
-            second_point = None
-            tracking = False
-            reset_track = True
-            # print("[TRACK] - ROI RESET")
-        if point_counter == 2:
+        if (not tracking and reset_track):
             reset_track = False
             tracker = cv2.legacy.TrackerCSRT_create()
-            tracker.init(empty_frame, (first_point[0], first_point[1], abs(
-                second_point[0] - first_point[0]), abs(second_point[1] - first_point[1])))
+            tracker.init(
+                empty_frame, (cursor_pos[0], cursor_pos[1], roi_size[0], roi_size[1]))
             tracking = True
+        else:
+            reset_track = True
 
 
 def tracker_control():
@@ -202,13 +204,15 @@ def tracker_control():
     try:
         while tracking:
             tracker_ret, roi = tracker.update(empty_frame)
-            if tracker_ret == False or reset_track:
+            if tracker_ret == False or reset_track == True:
                 tracking = False
+                reset_track = True
                 point_counter = 0
             # time.sleep(0.01)
     except:
         print("[TRACK] - Invalid Coordinates")
         tracking = False
+        reset_track = True
         point_counter = 0
 
     track_thread_active = False
@@ -273,6 +277,8 @@ while frame_read:
             WIDTH // 2) + 90, (HEIGHT // 2) - 100), FONT, FONT_SCALE, ui_text_clr, LINE_THICKNESS)
 
         # bottom left telemtry
+        cv2.putText(frame, "DST  {:.1f}".format(str(drone.get_distance_tof() // 30.48)),
+                    (5, HEIGHT - 100), FONT, FONT_SCALE, ui_text_clr, LINE_THICKNESS)
         cv2.putText(frame, "SPD  {}  {}  {}".format(drone.get_speed_x(), drone.get_speed_y(
         ), drone.get_speed_z()), (5, HEIGHT - 70), FONT, FONT_SCALE, ui_text_clr, LINE_THICKNESS)
         cv2.putText(frame, "ACC  {}  {}  {}".format(drone.get_acceleration_x(), drone.get_acceleration_y(
@@ -311,6 +317,24 @@ while frame_read:
             print("[TRACK] - TRACKING RESET")
             tracker_thread = None
 
+############
+        if not tracking:
+            cv2.rectangle(frame, (cursor_pos[0], cursor_pos[1]), (
+                cursor_pos[0] + roi_size[0], cursor_pos[1] + roi_size[1]), ui_text_clr, 1)
+            # top
+            cv2.line(frame, (cursor_pos[0] + roi_size[0] // 2, cursor_pos[1]),
+                     (cursor_pos[0] + roi_size[0] // 2, 0), ui_text_clr, 1)
+            # left
+            cv2.line(frame, (cursor_pos[0], cursor_pos[1] + roi_size[1] // 2),
+                     (0, cursor_pos[1] + roi_size[1] // 2), ui_text_clr, 1)
+            # right
+            cv2.line(frame, (cursor_pos[0] + roi_size[0], cursor_pos[1] + roi_size[1] // 2),
+                     (WIDTH, cursor_pos[1] + roi_size[1] // 2), WHITE, 1)
+            # bottom
+            cv2.line(frame, (cursor_pos[0] + roi_size[0] // 2, cursor_pos[1] + roi_size[1]),
+                     (cursor_pos[0] + roi_size[0] // 2, HEIGHT), WHITE, 1)
+############
+
         # active tracking / lock
         if tracker_ret and tracking:
             x, y, w, h = [int(value) for value in roi]
@@ -321,7 +345,7 @@ while frame_read:
                 cv2.rectangle(frame, (WIDTH // 2 - (lock_size // 2), HEIGHT - 38),
                               (WIDTH // 2 + lock_size - 25, HEIGHT - 20), ui_text_clr, -1)
                 cv2.putText(frame, "LOCK", (WIDTH // 2 - (lock_size // 2),
-                            HEIGHT - 22), FONT, FONT_SCALE, WHITE, LINE_THICKNESS)
+                            HEIGHT - 22), FONT, FONT_SCALE, BLACK, LINE_THICKNESS)
             else:
                 lock = False
                 trk_size = cv2.getTextSize(
@@ -331,8 +355,27 @@ while frame_read:
                 cv2.putText(frame, "TRK", (WIDTH // 2 - (trk_size // 2),
                             HEIGHT - 22), FONT, FONT_SCALE, BLACK, LINE_THICKNESS)
 
-            cv2.rectangle(frame, (x, y), (x + w, y + h),
-                          RED if dive else ui_text_clr, 2)
+            # cv2.rectangle(frame, (x, y), (x + w, y + h),
+                # RED if dive else ui_text_clr, 2)
+
+            cv2.line(frame, (x, y), (x + 20, y),
+                     RED if dive else ui_text_clr, 2)
+            cv2.line(frame, (x, y), (x, y + 20),
+                     RED if dive else ui_text_clr, 2)
+            cv2.line(frame, (x, y + h), (x, y + h - 20),
+                     RED if dive else ui_text_clr, 2)
+            cv2.line(frame, (x, y + h), (x + 20, y + h),
+                     RED if dive else ui_text_clr, 2)
+
+            cv2.line(frame, (x + w, y), (x + w - 20, y),
+                     RED if dive else ui_text_clr, 2)
+            cv2.line(frame, (x + w, y), (x + w, y + 20),
+                     RED if dive else ui_text_clr, 2)
+            cv2.line(frame, (x + w, y + h), (x + w, y + h - 20),
+                     RED if dive else ui_text_clr, 2)
+            cv2.line(frame, (x + w, y + h), (x + w - 20, y + h),
+                     RED if dive else ui_text_clr, 2)
+
             cv2.circle(frame, (x + w // 2, y + h // 2), 3,
                        RED if dive else ui_text_clr, -1)
             # top
