@@ -1,31 +1,33 @@
 import cv2
 import time
 from threading import Thread
-from tello import Tello
+from djitellopy import Tello
+import queue
+
+feed_queue = queue.Queue()
+drone = Tello()
+drone.connect()
+drone.streamon()
+frame_read = drone.get_frame_read()
 
 
-class Drone(Object):
-    def __init__(self, drone):
-        drone.streamon()
-        self.feed_signal = drone.get_frame_read()
-        self.feed = None
+def receive():
+    global drone, frame_read, feed_queue
+    while True:
+        frame = frame_read.frame
+        feed_queue.put(frame)
 
-    def update_feed(self, drone):
-        while self.feed_signal:
-            self.feed = self.feed_signal.frame
 
-        try:
-            cv2.imshow("FEED", frame)
-        except Exception as error:
-            print("[FEED] - Display error\n", error)
-            key_listener.join()
-            drone.streamoff()
-            drone.end()
-            break
+def display():
+    global feed_queue
+    while True:
+        if not feed_queue.empty():
+            frame = feed_queue.get()
+            cv2.imshow('Drone Feed', frame)
+            cv2.waitKey(1)
 
-    start_time = time.time()
-    if (cv2.waitKey(1) & 0xff) == 27:
-        break
 
-    def get_feed(self):
-        return self.feed
+thread1 = Thread(target=receive)
+thread2 = Thread(target=display)
+thread1.start()
+thread2.start()

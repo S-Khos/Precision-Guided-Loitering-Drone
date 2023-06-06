@@ -279,12 +279,12 @@ while frame_read:
             WIDTH // 2) + 90, (HEIGHT // 2) - 100), FONT, FONT_SCALE, ui_text_clr, LINE_THICKNESS)
 
         # bottom left telemtry
-        cv2.putText(frame, "BRM  {:.2f} FT".format(drone.get_barometer() / 30.48),
+        cv2.putText(frame, "BRM  {}".format(int(drone.get_barometer() / 30.48)),
                     (5, HEIGHT - 100), FONT, FONT_SCALE, ui_text_clr, LINE_THICKNESS)
-        cv2.putText(frame, "SPD  {}  {}  {} CM/S".format(drone.get_speed_x(), drone.get_speed_y(
+        cv2.putText(frame, "SPD  {}  {}  {}".format(drone.get_speed_x(), drone.get_speed_y(
         ), drone.get_speed_z()), (5, HEIGHT - 70), FONT, FONT_SCALE, ui_text_clr, LINE_THICKNESS)
-        cv2.putText(frame, "ACC  {}  {}  {}".format(drone.get_acceleration_x(), drone.get_acceleration_y(
-        ), drone.get_acceleration_z()), (5, HEIGHT - 40), FONT, FONT_SCALE, ui_text_clr, LINE_THICKNESS)
+        cv2.putText(frame, "ACC  {}  {}  {}".format(int(drone.get_acceleration_x()), int(drone.get_acceleration_y(
+        )), int(drone.get_acceleration_z())), (5, HEIGHT - 40), FONT, FONT_SCALE, ui_text_clr, LINE_THICKNESS)
         cv2.putText(frame, "YPR  {}  {}  {}".format(drone.get_yaw(), drone.get_pitch(
         ), drone.get_roll()), (5, HEIGHT - 10), FONT, FONT_SCALE, ui_text_clr, LINE_THICKNESS)
 
