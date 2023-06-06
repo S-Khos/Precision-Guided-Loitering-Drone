@@ -41,8 +41,8 @@ second_point = None
 point_counter = 0
 lock = False
 roi_size = [100, 100]
-roi_delta = 50
-cursor_pos = [0, 0]
+roi_delta = 20
+cursor_pos = [CENTRE_X, CENTRE_Y]
 
 flt_ctrl_active = False
 flt_ctrl_lock = threading.Lock()
@@ -181,7 +181,7 @@ def mouse_event_handler(event, x, y, flags, param):
         roi_size[0] += roi_delta
         roi_size[1] += roi_delta
 
-    if event == cv2.EVENT_MBUTTONDBLCLK:
+    if event == cv2.EVENT_RBUTTONDOWN:
         roi_size[0] -= roi_delta
         roi_size[1] -= roi_delta
 
@@ -273,13 +273,13 @@ while frame_read:
             "SPD  {} CM/S".format(abs(spd_mag)), FONT, FONT_SCALE, LINE_THICKNESS)[0][0]
         cv2.putText(frame, "SPD  {} CM/S".format(abs(spd_mag)), ((WIDTH // 2) - 90 -
                     spd_size, (HEIGHT // 2) - 100), FONT, FONT_SCALE, ui_text_clr, LINE_THICKNESS)
-        cv2.putText(frame, "ALT  {:.1f} FT".format(relative_alt), ((
+        cv2.putText(frame, "ALT  {:.1f} FT".format(drone.get_distance_tof() / 30.48), ((
             WIDTH // 2) + 90, (HEIGHT // 2) - 100), FONT, FONT_SCALE, ui_text_clr, LINE_THICKNESS)
 
         # bottom left telemtry
-        cv2.putText(frame, "DST  {:.1f}".format(str(drone.get_distance_tof() // 30.48)),
+        cv2.putText(frame, "BRM  {:.2f} FT".format(drone.get_barometer() / 30.48),
                     (5, HEIGHT - 100), FONT, FONT_SCALE, ui_text_clr, LINE_THICKNESS)
-        cv2.putText(frame, "SPD  {}  {}  {}".format(drone.get_speed_x(), drone.get_speed_y(
+        cv2.putText(frame, "SPD  {}  {}  {} CM/S".format(drone.get_speed_x(), drone.get_speed_y(
         ), drone.get_speed_z()), (5, HEIGHT - 70), FONT, FONT_SCALE, ui_text_clr, LINE_THICKNESS)
         cv2.putText(frame, "ACC  {}  {}  {}".format(drone.get_acceleration_x(), drone.get_acceleration_y(
         ), drone.get_acceleration_z()), (5, HEIGHT - 40), FONT, FONT_SCALE, ui_text_clr, LINE_THICKNESS)
@@ -294,7 +294,7 @@ while frame_read:
         # bottom compass
         cv2.circle(frame, (WIDTH - 60, HEIGHT - 60), 50, ui_text_clr, 1)
         cv2.arrowedLine(frame, (WIDTH - 60, HEIGHT - 60), (int(-50 * math.cos(math.radians(drone.get_yaw() + 90)) +
-                        WIDTH - 60), int((HEIGHT - 60) - (50 * math.sin(math.radians(drone.get_yaw() + 90))))), ui_text_clr, 1, tipLength=.15)  # switch -50 with 50
+                        WIDTH - 60), int((HEIGHT - 60) - (50 * math.sin(math.radians(drone.get_yaw() + 90))))), ui_text_clr, 1, tipLength=.15)
 
         # top center
         if (manual_control and flt_ctrl_active == False):
@@ -317,7 +317,6 @@ while frame_read:
             print("[TRACK] - TRACKING RESET")
             tracker_thread = None
 
-############
         if not tracking:
             cv2.rectangle(frame, (cursor_pos[0], cursor_pos[1]), (
                 cursor_pos[0] + roi_size[0], cursor_pos[1] + roi_size[1]), ui_text_clr, 1)
@@ -333,12 +332,11 @@ while frame_read:
             # bottom
             cv2.line(frame, (cursor_pos[0] + roi_size[0] // 2, cursor_pos[1] + roi_size[1]),
                      (cursor_pos[0] + roi_size[0] // 2, HEIGHT), WHITE, 1)
-############
 
         # active tracking / lock
         if tracker_ret and tracking:
             x, y, w, h = [int(value) for value in roi]
-            if (CENTRE_X > x and CENTRE_X < x + w and CENTRE_Y > y and CENTRE_Y < y + h):
+            if (CENTRE_X > x and CENTRE_X < x + w and CENTRE_Y > y and CENTRE_Y < y + h and not manual_control):
                 lock = True
                 lock_size = cv2.getTextSize(
                     "LOCK", FONT, FONT_SCALE, LINE_THICKNESS)[0][0]
@@ -354,9 +352,6 @@ while frame_read:
                               (WIDTH // 2 + trk_size - 20, HEIGHT - 20), ui_text_clr, -1)
                 cv2.putText(frame, "TRK", (WIDTH // 2 - (trk_size // 2),
                             HEIGHT - 22), FONT, FONT_SCALE, BLACK, LINE_THICKNESS)
-
-            # cv2.rectangle(frame, (x, y), (x + w, y + h),
-                # RED if dive else ui_text_clr, 2)
 
             cv2.line(frame, (x, y), (x + 20, y),
                      RED if dive else ui_text_clr, 2)
