@@ -33,7 +33,7 @@ class FrontEnd(object):
             self.frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
             # top right (fps)
-            fps = self.get_fps()
+            fps = self.backend.get_fps()
             fps_size = cv2.getTextSize("FPS  {}".format(
                 str(int(fps))), FONT, FONT_SCALE, LINE_THICKNESS)[0][0]
             cv2.putText(frame, "FPS  {}".format(str(int(fps))), (FRAME_WIDTH -
@@ -84,13 +84,23 @@ class FrontEnd(object):
 
             # bottom compass
             cv2.circle(frame, (WIDTH - 60, HEIGHT - 60), 50, ui_text_clr, 1)
-            cv2.arrowedLine(frame, (WIDTH - 60, HEIGHT - 60), (int(-50 * math.cos(math.radians(self.backend.get_yaw() + 90)) +
-                            WIDTH - 60), int((HEIGHT - 60) - (50 * math.sin(math.radians(self.backend.get_yaw() + 90))))), UI_COLOUR, 1, tipLength=.15)
+            cv2.arrowedLine(frame, (WIDTH - 60, HEIGHT - 60), (int(-50 * math.cos(math.radians(self.backend.get_yaw() + 90)) + WIDTH - 60),
+                            int((HEIGHT - 60) - (50 * math.sin(math.radians(self.backend.get_yaw() + 90))))), UI_COLOUR, 1, tipLength=.15)
+
+            # top center
+            if (self.backend.in_manual_ctrl() and not self.backend.guidance_system_active()):
+                cv2.rectangle(frame, (WIDTH // 2 - 20, 10),
+                              (WIDTH // 2 + 29, 28), UI_COLOUR, -1)
+                cv2.putText(frame, "CTRL", (WIDTH // 2 - 20, 25),
+                            FONT, FONT_SCALE, BLACK, LINE_THICKNESS)
+            else:
+                cv2.rectangle(frame, (WIDTH // 2 - 20, 10),
+                              (WIDTH // 2 + 31, 28), UI_COLOUR, -1)
+                cv2.putText(frame, "AUTO", (WIDTH // 2 - 20, 25),
+                            FONT, FONT_SCALE, BLACK, LINE_THICKNESS)
+
 
         except Exception as error:
             print("[FEED] - UI ERROR\n", error)
 
-    def get_fps(self):
-        elapsed_time = time.time() - self.fps_init_time
-        fps = 1 / elapsed_time
-        return fps
+        return frame
