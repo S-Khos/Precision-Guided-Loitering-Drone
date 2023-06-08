@@ -45,6 +45,28 @@ class BackEnd(object):
                 target=tracker_control, daemon=True)
             tracker_thread.start()
 
+        if not tracking and not tracker_active and tracker_thread:
+            print("[TRACK] - TRACKING RESET")
+            tracker_thread = None
+
+        if not flt_ctrl_active and not manual_ctrl:
+            flight_ctrl_thread = threading.Thread(
+                target=guidance_system, daemon=True)
+            flight_ctrl_thread.start()
+            flt_ctrl_active = True
+
+    def is_tracking(self):
+        return tracking
+
+    def is_tracker_active(self):
+        return tracker_active
+
+    def is_tracker_reset(self):
+        return tracker_reset
+
+    def get_tracker_return(self):
+        return tracker_return
+
     def get_fps(self):
         elapsed_time = time.time() - self.fps_init_time
         fps = 1 / elapsed_time

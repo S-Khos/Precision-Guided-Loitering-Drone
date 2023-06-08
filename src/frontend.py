@@ -99,6 +99,74 @@ class FrontEnd(object):
                 cv2.putText(frame, "AUTO", (WIDTH // 2 - 20, 25),
                             FONT, FONT_SCALE, BLACK, LINE_THICKNESS)
 
+            if self.backend.is_tracking():
+                cv2.rectangle(frame, (cursor_pos[0], cursor_pos[1]), (
+                    cursor_pos[0] + roi_size[0], cursor_pos[1] + roi_size[1]), ui_text_clr, 1)
+                # top
+                cv2.line(frame, (cursor_pos[0] + roi_size[0] // 2, cursor_pos[1]),
+                         (cursor_pos[0] + roi_size[0] // 2, 0), ui_text_clr, 1)
+                # left
+                cv2.line(frame, (cursor_pos[0], cursor_pos[1] + roi_size[1] // 2),
+                         (0, cursor_pos[1] + roi_size[1] // 2), ui_text_clr, 1)
+                # right
+                cv2.line(frame, (cursor_pos[0] + roi_size[0], cursor_pos[1] + roi_size[1] // 2),
+                         (WIDTH, cursor_pos[1] + roi_size[1] // 2), WHITE, 1)
+                # bottom
+                cv2.line(frame, (cursor_pos[0] + roi_size[0] // 2, cursor_pos[1] + roi_size[1]),
+                         (cursor_pos[0] + roi_size[0] // 2, HEIGHT), WHITE, 1)
+
+            # active tracking / lock
+            if self.backend.get_tracker_return() and self.backend.is_tracking():
+                x, y, w, h = [int(value) for value in roi]
+                if (CENTRE_X > x and CENTRE_X < x + w and CENTRE_Y > y and CENTRE_Y < y + h and not manual_control):
+                    lock = True
+                    lock_size = cv2.getTextSize(
+                        "LOCK", FONT, FONT_SCALE, LINE_THICKNESS)[0][0]
+                    cv2.rectangle(frame, (WIDTH // 2 - (lock_size // 2), HEIGHT - 38),
+                                  (WIDTH // 2 + lock_size - 25, HEIGHT - 20), ui_text_clr, -1)
+                    cv2.putText(frame, "LOCK", (WIDTH // 2 - (lock_size // 2),
+                                HEIGHT - 22), FONT, FONT_SCALE, BLACK, LINE_THICKNESS)
+                else:
+                    lock = False
+                    trk_size = cv2.getTextSize(
+                        "TRK", FONT, FONT_SCALE, LINE_THICKNESS)[0][0]
+                    cv2.rectangle(frame, (WIDTH // 2 - (trk_size // 2), HEIGHT - 38),
+                                  (WIDTH // 2 + trk_size - 20, HEIGHT - 20), ui_text_clr, -1)
+                    cv2.putText(frame, "TRK", (WIDTH // 2 - (trk_size // 2),
+                                HEIGHT - 22), FONT, FONT_SCALE, BLACK, LINE_THICKNESS)
+
+                cv2.line(frame, (x, y), (x + 20, y),
+                         RED if dive else ui_text_clr, 2)
+                cv2.line(frame, (x, y), (x, y + 20),
+                         RED if dive else ui_text_clr, 2)
+                cv2.line(frame, (x, y + h), (x, y + h - 20),
+                         RED if dive else ui_text_clr, 2)
+                cv2.line(frame, (x, y + h), (x + 20, y + h),
+                         RED if dive else ui_text_clr, 2)
+
+                cv2.line(frame, (x + w, y), (x + w - 20, y),
+                         RED if dive else ui_text_clr, 2)
+                cv2.line(frame, (x + w, y), (x + w, y + 20),
+                         RED if dive else ui_text_clr, 2)
+                cv2.line(frame, (x + w, y + h), (x + w, y + h - 20),
+                         RED if dive else ui_text_clr, 2)
+                cv2.line(frame, (x + w, y + h), (x + w - 20, y + h),
+                         RED if dive else ui_text_clr, 2)
+
+                cv2.circle(frame, (x + w // 2, y + h // 2), 3,
+                           RED if dive else ui_text_clr, -1)
+                # top
+                cv2.line(frame, (x + w // 2, y),
+                         (x + w // 2, 0), ui_text_clr, 1)
+                # left
+                cv2.line(frame, (x, y + h // 2),
+                         (0, y + h // 2), ui_text_clr, 1)
+                # right
+                cv2.line(frame, (x + w, y + h // 2),
+                         (WIDTH, y + h // 2), WHITE, 1)
+                # bottom
+                cv2.line(frame, (x + w // 2, y + h),
+                         (x + w // 2, HEIGHT), WHITE, 1)
 
         except Exception as error:
             print("[FEED] - UI ERROR\n", error)

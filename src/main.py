@@ -116,6 +116,8 @@ def guidance_system():
 
     except Exception as error:
         yaw_pid.reset()
+        y_pid.reset()
+        x_pid.reset()
         flt_ctrl_lock.acquire()
         flt_ctrl_active = False
         manual_control = False
@@ -224,15 +226,22 @@ def tracker_control():
 
 
 cv2.namedWindow("FEED", cv2.WINDOW_NORMAL)
-cv2.moveWindow("FEED", int((1920 // 2) - (WIDTH // 2)),
+cv2.namedWindow("DESIGNATOR", cv2.WINDOW_NORMAL)
+cv2.moveWindow("FEED", int((1920 // 4) - (WIDTH // 2)),
                int((1080 // 2) - (HEIGHT // 2)))
-cv2.setMouseCallback("FEED", mouse_event_handler)
+cv2.moveWindow("DESIGNATOR", int((1920 // 4) + (WIDTH // 2)),
+               int((1080 // 2) - (HEIGHT // 2)))
+
+cv2.setMouseCallback("DESIGNATOR", mouse_event_handler)
+
 key_listener = keyboard.Listener(
     on_press=manual_controller, on_release=on_release)
 key_listener.start()
+
 init_alt = drone.get_barometer()
 
 start_time = time.time()
+
 while frame_read:
     try:
         frame = frame_read.frame
@@ -320,19 +329,19 @@ while frame_read:
             tracker_thread = None
 
         if not tracking:
-            cv2.rectangle(frame, (cursor_pos[0], cursor_pos[1]), (
+            cv2.rectangle(empty_frame, (cursor_pos[0], cursor_pos[1]), (
                 cursor_pos[0] + roi_size[0], cursor_pos[1] + roi_size[1]), ui_text_clr, 1)
             # top
-            cv2.line(frame, (cursor_pos[0] + roi_size[0] // 2, cursor_pos[1]),
+            cv2.line(empty_frame, (cursor_pos[0] + roi_size[0] // 2, cursor_pos[1]),
                      (cursor_pos[0] + roi_size[0] // 2, 0), ui_text_clr, 1)
             # left
-            cv2.line(frame, (cursor_pos[0], cursor_pos[1] + roi_size[1] // 2),
+            cv2.line(empty_frame, (cursor_pos[0], cursor_pos[1] + roi_size[1] // 2),
                      (0, cursor_pos[1] + roi_size[1] // 2), ui_text_clr, 1)
             # right
-            cv2.line(frame, (cursor_pos[0] + roi_size[0], cursor_pos[1] + roi_size[1] // 2),
+            cv2.line(empty_frame, (cursor_pos[0] + roi_size[0], cursor_pos[1] + roi_size[1] // 2),
                      (WIDTH, cursor_pos[1] + roi_size[1] // 2), WHITE, 1)
             # bottom
-            cv2.line(frame, (cursor_pos[0] + roi_size[0] // 2, cursor_pos[1] + roi_size[1]),
+            cv2.line(empty_frame, (cursor_pos[0] + roi_size[0] // 2, cursor_pos[1] + roi_size[1]),
                      (cursor_pos[0] + roi_size[0] // 2, HEIGHT), WHITE, 1)
 
         # active tracking / lock
@@ -396,6 +405,8 @@ while frame_read:
         print("[FEED] - Interface error\n", error)
     try:
         cv2.imshow("FEED", frame)
+        cv2.imshow("DESIGNATOR", empty_frame)
+
     except Exception as error:
         print("[FEED] - Display error\n", error)
         key_listener.join()
