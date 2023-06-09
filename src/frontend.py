@@ -24,19 +24,24 @@ class FrontEnd(object):
 
     def __init__(self, drone):
         self.frame = None
+        self.designator_frame = None
         self.drone = drone
         self.fps_init_time = time.time()
-        self.backend = BackEnd(drone)
+        self.backend = None
 
-    def update(self, frame):
+    def update(self, frame, backend):
         try:
-            self.frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+            self.backend = backend
+            self.frame = frame
+            timer = cv2.getTickCount()
+            self.frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            self.designator_frame = self.frame.copy()
 
             # top right (fps)
             fps = self.backend.get_fps()
             fps_size = cv2.getTextSize("FPS  {}".format(
                 str(int(fps))), FONT, FONT_SCALE, LINE_THICKNESS)[0][0]
-            cv2.putText(frame, "FPS  {}".format(str(int(fps))), (FRAME_WIDTH -
+            cv2.putText(frame, "FPS  {}".format(int(fps)), (FRAME_WIDTH -
                         fps_size - 5, 25), FONT, FONT_SCALE, UI_COLOUR, LINE_THICKNESS)
 
             # top left

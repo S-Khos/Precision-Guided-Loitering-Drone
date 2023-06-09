@@ -14,47 +14,69 @@ class ManualControl(object):
 
         self.key_listener = keyboard.Listener(
             on_press=self.on_press, on_release=self.on_release)
-        key_listener.start()
+        self.key_listener.start()
 
     def on_release(self, key):
         if key == 'Key.esc':
             return False
 
+    def terminate(self):
+        self.key_listener.join()
+
     def on_press(self, key):
         try:
-            if key == 'z':
+            if key.char == 'z':
                 self.manual = not self.manual
-            elif key == 'x':
+            elif key.char == 'x':
                 self.dive = not self.dive
             if self.manual:
-                if key == 'i':
+                if key.char == 'i':
                     self.drone.send_rc_control(0, 0, 0, 0)
                     self.drone.takeoff()
-                elif key == 'k':
+                elif key.char == 'k':
                     self.drone.send_rc_control(0, 0, 0, 0)
                     self.drone.land()
-                elif key == 'w':
+                elif key.char == 'w':
                     self.drone.move_forward(self.default_dist)
-                elif key == 's':
+                elif key.char == 's':
                     self.drone.move_back(self.default_dist)
-                elif key == 'a':
+                elif key.char == 'a':
                     self.drone.move_left(self.default_dist)
-                elif key == 'd':
+                elif key.char == 'd':
                     self.drone.move_right(self.default_dist)
-                elif key == 'q':
+                elif key.char == 'q':
                     self.drone.rotate_counter_clockwise(45)
-                elif key == 'e':
+                elif key.char == 'e':
                     self.drone.rotate_clockwise(45)
-                elif key == "Key.up":
+                elif key.char == 'r':
                     self.drone.move_up(self.default_dist)
-                elif key == "Key.down":
+                elif key.char == 'f':
                     self.drone.move_down(self.default_dist)
-                elif key == "Key.left":
+                elif key.char == ']':
                     self.designator_roi_size[0] += self.designator_delta
                     self.designator_roi_size[1] += self.designator_delta
-                elif key == "Key.right":
+                elif key.char == '[':
                     self.designator_roi_size[0] -= self.designator_delta
                     self.designator_roi_size[1] -= self.designator_delta
 
         except:
-            print("[ManualControl] - Invalid key.")
+            print("[Manual Control] - Invalid key.")
+
+
+class CursorControl(object):
+    def __init__(manual_control):
+        self.manual_control = manual_control
+        self.cursor_pos = [0, 0]
+
+    def event_handler(event, x, y, flags, param):
+        cursor_pos[0] = x - self.manual_control.designator_roi_size[0] // 2
+        cursor_pos[1] = y - self.manual_control.designator_roi_size[1] // 2
+        if event == cv2.EVENT_LBUTTONDOWN:
+            if (not tracking and reset_track):
+                reset_track = False
+                tracker = cv2.legacy.TrackerCSRT_create()
+                tracker.init(
+                    empty_frame, (self.cursor_pos[0], cursor_pos[1], designator_roi_size[0], designator_roi_size[1]))
+                tracking = True
+            else:
+                reset_track = True

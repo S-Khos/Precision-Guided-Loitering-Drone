@@ -8,9 +8,6 @@ from djitellopy import Tello
 
 class BackEnd(object):
 
-    manual_ctrl = True
-    dive_lock = False
-
     tracker_thread_lock = threading.Lock()
     tracker_thread = None
     tracker_active = False
@@ -18,14 +15,10 @@ class BackEnd(object):
     tracking = False
     tracker_roi = None
     tracker_return = False
-    roi_selector_size = [100, 100]
-    roi_selector_size_delta = 20
-    cursor_pos = [0, 0]
 
     guidance_sys_active = False
     flt_ctrl_lock = threading.Lock()
     flight_ctrl_thread = None
-    dive = False
 
     YAW_PID = [0.32, 0.05, 0.11]  # 0.32, 0, 0.06
     Y_PID = [1.3, 0.18, 0.1]  # 0.1, 0.3, 0.3,
@@ -36,9 +29,10 @@ class BackEnd(object):
         self.CENTRE_X = centre_width
         self.CENTRE_Y = centre_height
         self.fps_init_time = time.time()
-        cursor_pos[0], cursor_pos[1] = self.CENTRE_X, self.CENTRE_Y
+        self.manual_control = None
 
-    def process(self, frame):
+    def process(self, frame, manual_control):
+        self.manual_control = manual_control
 
         if tracking and not tracker_active:
             tracker_thread = threading.Thread(
@@ -119,7 +113,7 @@ class BackEnd(object):
         return int(self.drone.get_roll())
 
     def in_manual_ctrl(self):
-        return manual_ctrl
+        return self.manual_control.manual
 
     def guidance_system_active(self):
         return guidance_sys_active

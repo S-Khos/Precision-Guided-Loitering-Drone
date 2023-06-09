@@ -7,12 +7,11 @@ import numpy as np
 from pynput import keyboard
 from pid import PID
 import matplotlib.pyplot as plt
+from manual_control import ManualControl, CursorControl
 
-init_alt = 0
-relative_alt = 0
+
 altitude = 0
 spd_mag = 0
-default_dist = 30
 
 WIDTH = 960
 HEIGHT = 720
@@ -37,18 +36,12 @@ tracker_thread = None
 tracking = False
 roi = None
 tracker_ret = False
-first_point = None
-second_point = None
-point_counter = 0
 lock = False
-roi_size = [100, 100]
-roi_delta = 20
 cursor_pos = [CENTRE_X, CENTRE_Y]
 
 flt_ctrl_active = False
 flt_ctrl_lock = threading.Lock()
 flight_ctrl_thread = None
-dive = False
 
 # add derivative to reduce overshoot, add integral to reduce steady state error, add proportional to reduce rise time
 
@@ -58,6 +51,7 @@ X_PID = [0.2, 0.0, 0.12]
 yaw_pid_array = []
 yaw_pid_time = []
 drone = Tello()
+manual_control = ManualControl(drone)
 
 try:
     drone.connect()
@@ -78,7 +72,7 @@ except:
 
 
 def guidance_system():
-    global CENTRE_X, CENTRE_Y, drone, yaw_pid, y_pid, x_pid, roi, tracker_ret, flt_ctrl_lock, flt_ctrl_active, tracking, manual_control, lock, dive, altitude
+    global CENTRE_X, CENTRE_Y, drone, yaw_pid, y_pid, x_pid, roi, tracker_ret, flt_ctrl_lock, flt_ctrl_active, tracking, manual_control, lock, altitude
 
     try:
         print("[FLT CTRL] - ACTIVE")
@@ -87,7 +81,7 @@ def guidance_system():
         x_pid = PID(X_PID[0], X_PID[1], X_PID[2], CENTRE_X, -80, 80)
         y_pid = PID(Y_PID[0], Y_PID[1], Y_PID[2], CENTRE_Y, -100, 100)
 
-        while tracking and tracker_ret and manual_control == False:
+        while tracking and tracker_ret and not manual_control.manual:
             x, y, w, h = [int(value) for value in roi]
             targetX = x + w // 2
             targetY = y + h // 2
@@ -101,7 +95,7 @@ def guidance_system():
 
             if drone.send_rc_control:
                 drone.send_rc_control(-x_velocity if abs(x_velocity)
-                                      > 60 else 0, 90 if altitude > 1 and dive else 0, y_velocity, -yaw_velocity)
+                                      > 60 else 0, 90 if altitude > 1 and manual_control.dive else 0, y_velocity, -yaw_velocity)
 
             time.sleep(0.01)
 
@@ -116,89 +110,33 @@ def guidance_system():
 
     except Exception as error:
         yaw_pid.reset()
+        y_pid.reset()
+        x_pid.reset()
         flt_ctrl_lock.acquire()
         flt_ctrl_active = False
-        manual_control = False
+        manual_control.manual = False
         flt_ctrl_lock.release()
         drone.send_rc_control(0, 0, 0, 0)
         print("[FLT CTRL] - Error occured\n", error)
 
 
-def manual_controller(key):
-    global manual_control, drone, default_dist, dive
-    try:
-        if key.char == 'z':
-            if manual_control:
-                manual_control = False
-                drone.send_rc_control(0, 0, 0, 0)
-            else:
-                manual_control = True
-                drone.send_rc_control(0, 0, 0, 0)
-
-        if key.char == 'x':
-            if dive != True:
-                dive = True
-            else:
-                dive = False
-
-        if manual_control:
-            if key.char == 'i':
-                drone.send_rc_control(0, 0, 0, 0)
-                drone.takeoff()
-            elif key.char == 'k':
-                drone.land()
-            elif key.char == 'w':
-                drone.move_forward(default_dist)
-            elif key.char == 'a':
-                drone.move_left(default_dist)
-            elif key.char == 'd':
-                drone.move_right(default_dist)
-            elif key.char == 's':
-                drone.move_back(default_dist)
-            elif key.char == 'q':
-                drone.rotate_counter_clockwise(default_dist)
-            elif key.char == 'e':
-                drone.rotate_clockwise(default_dist)
-            elif key.char == 'up':
-                drone.move_up(default_dist)
-            elif key.char == 'down':
-                drone.move_down(default_dist)
-    except:
-        print("[MNUL CTRL] - Invalid key")
-
-
-def on_release(key):
-    if key == keyboard.Key.esc:
-        return False
-
-
 def mouse_event_handler(event, x, y, flags, param):
-    global tracker, tracking, point_counter, first_point, second_point, reset_track, cursor_pos, roi_size
-
-    cursor_pos[0] = x - roi_size[0] // 2
-    cursor_pos[1] = y - roi_size[1] // 2
-
-    if event == cv2.EVENT_MBUTTONDOWN:
-        roi_size[0] += roi_delta
-        roi_size[1] += roi_delta
-
-    if event == cv2.EVENT_RBUTTONDOWN:
-        roi_size[0] -= roi_delta
-        roi_size[1] -= roi_delta
-
+    global tracker, tracking, reset_track, cursor_pos, manual_control
+    cursor_pos[0] = x - manual_control.designator_roi_size[0] // 2
+    cursor_pos[1] = y - manual_control.designator_roi_size[1] // 2
     if event == cv2.EVENT_LBUTTONDOWN:
         if (not tracking and reset_track):
             reset_track = False
             tracker = cv2.legacy.TrackerCSRT_create()
             tracker.init(
-                empty_frame, (cursor_pos[0], cursor_pos[1], roi_size[0], roi_size[1]))
+                empty_frame, (cursor_pos[0], cursor_pos[1], manual_control.designator_roi_size[0], manual_control.designator_roi_size[1]))
             tracking = True
         else:
             reset_track = True
 
 
 def tracker_control():
-    global tracking, empty_frame, tracker, roi, tracker_ret, track_thread_active, reset_track, point_counter, drone
+    global tracking, empty_frame, tracker, roi, tracker_ret, track_thread_active, reset_track, drone
     tracker_lock.acquire()
     track_thread_active = True
     print("[TRACK] - TRACKING ACTIVE")
@@ -208,13 +146,11 @@ def tracker_control():
             if tracker_ret == False or reset_track == True:
                 tracking = False
                 reset_track = True
-                point_counter = 0
-            # time.sleep(0.01)
+
     except:
         print("[TRACK] - Invalid Coordinates")
         tracking = False
         reset_track = True
-        point_counter = 0
 
     track_thread_active = False
     tracker_thread = None
@@ -224,22 +160,22 @@ def tracker_control():
 
 
 cv2.namedWindow("FEED", cv2.WINDOW_NORMAL)
-cv2.moveWindow("FEED", int((1920 // 2) - (WIDTH // 2)),
+cv2.namedWindow("DESIGNATOR", cv2.WINDOW_NORMAL)
+cv2.moveWindow("FEED", int((1920 // 4) - (WIDTH // 2)),
                int((1080 // 2) - (HEIGHT // 2)))
-cv2.setMouseCallback("FEED", mouse_event_handler)
-key_listener = keyboard.Listener(
-    on_press=manual_controller, on_release=on_release)
-key_listener.start()
-init_alt = drone.get_barometer()
+cv2.moveWindow("DESIGNATOR", int((1920 // 4) + (WIDTH // 2)),
+               int((1080 // 2) - (HEIGHT // 2)))
+
+cv2.setMouseCallback("DESIGNATOR", mouse_event_handler)
 
 start_time = time.time()
+
 while frame_read:
     try:
         frame = frame_read.frame
         timer = cv2.getTickCount()
+        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         empty_frame = frame.copy()
-        empty_frame = cv2.cvtColor(empty_frame, cv2.COLOR_BGR2RGB)
-        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
         # top right (fps)
         elapsed_time = time.time() - start_time
@@ -249,7 +185,6 @@ while frame_read:
         cv2.putText(frame, "FPS  {}".format(str(int(fps))), (WIDTH -
                     fps_size - 5, 25), FONT, FONT_SCALE, ui_text_clr, LINE_THICKNESS)
 
-        # relative_alt = (drone.get_barometer() - init_alt) * 0.0328
         altitude = drone.get_distance_tof() / 30.48
         spd_mag = int(math.sqrt(drone.get_speed_x() ** 2 +
                       drone.get_speed_y() ** 2 + drone.get_speed_z() ** 2))
@@ -288,6 +223,7 @@ while frame_read:
         cv2.putText(frame, "YPR  {}  {}  {}".format(drone.get_yaw(), drone.get_pitch(
         ), drone.get_roll()), (5, HEIGHT - 10), FONT, FONT_SCALE, ui_text_clr, LINE_THICKNESS)
 
+        # top right
         time_size = cv2.getTextSize(
             "T + {}".format(drone.get_flight_time()), FONT, FONT_SCALE, LINE_THICKNESS)[0][0]
         cv2.putText(frame, "T + {}".format(drone.get_flight_time()),
@@ -299,7 +235,7 @@ while frame_read:
                         WIDTH - 60), int((HEIGHT - 60) - (50 * math.sin(math.radians(drone.get_yaw() + 90))))), ui_text_clr, 1, tipLength=.15)
 
         # top center
-        if (manual_control and flt_ctrl_active == False):
+        if (manual_control.manual and flt_ctrl_active == False):
             cv2.rectangle(frame, (WIDTH//2 - 20, 10),
                           (WIDTH//2 + 29, 28), ui_text_clr, -1)
             cv2.putText(frame, "CTRL", (WIDTH//2 - 20, 25),
@@ -320,25 +256,25 @@ while frame_read:
             tracker_thread = None
 
         if not tracking:
-            cv2.rectangle(frame, (cursor_pos[0], cursor_pos[1]), (
-                cursor_pos[0] + roi_size[0], cursor_pos[1] + roi_size[1]), ui_text_clr, 1)
+            cv2.rectangle(empty_frame, (cursor_pos[0], cursor_pos[1]), (
+                cursor_pos[0] + manual_control.designator_roi_size[0], cursor_pos[1] + manual_control.designator_roi_size[1]), ui_text_clr, 1)
             # top
-            cv2.line(frame, (cursor_pos[0] + roi_size[0] // 2, cursor_pos[1]),
-                     (cursor_pos[0] + roi_size[0] // 2, 0), ui_text_clr, 1)
+            cv2.line(empty_frame, (cursor_pos[0] + manual_control.designator_roi_size[0] // 2, cursor_pos[1]),
+                     (cursor_pos[0] + manual_control.designator_roi_size[0] // 2, 0), ui_text_clr, 1)
             # left
-            cv2.line(frame, (cursor_pos[0], cursor_pos[1] + roi_size[1] // 2),
-                     (0, cursor_pos[1] + roi_size[1] // 2), ui_text_clr, 1)
+            cv2.line(empty_frame, (cursor_pos[0], cursor_pos[1] + manual_control.designator_roi_size[1] // 2),
+                     (0, cursor_pos[1] + manual_control.designator_roi_size[1] // 2), ui_text_clr, 1)
             # right
-            cv2.line(frame, (cursor_pos[0] + roi_size[0], cursor_pos[1] + roi_size[1] // 2),
-                     (WIDTH, cursor_pos[1] + roi_size[1] // 2), WHITE, 1)
+            cv2.line(empty_frame, (cursor_pos[0] + manual_control.designator_roi_size[0], cursor_pos[1] + manual_control.designator_roi_size[1] // 2),
+                     (WIDTH, cursor_pos[1] + manual_control.designator_roi_size[1] // 2), WHITE, 1)
             # bottom
-            cv2.line(frame, (cursor_pos[0] + roi_size[0] // 2, cursor_pos[1] + roi_size[1]),
-                     (cursor_pos[0] + roi_size[0] // 2, HEIGHT), WHITE, 1)
+            cv2.line(empty_frame, (cursor_pos[0] + manual_control.designator_roi_size[0] // 2, cursor_pos[1] + manual_control.designator_roi_size[1]),
+                     (cursor_pos[0] + manual_control.designator_roi_size[0] // 2, HEIGHT), WHITE, 1)
 
         # active tracking / lock
         if tracker_ret and tracking:
             x, y, w, h = [int(value) for value in roi]
-            if (CENTRE_X > x and CENTRE_X < x + w and CENTRE_Y > y and CENTRE_Y < y + h and not manual_control):
+            if (CENTRE_X > x and CENTRE_X < x + w and CENTRE_Y > y and CENTRE_Y < y + h and not manual_control.manual):
                 lock = True
                 lock_size = cv2.getTextSize(
                     "LOCK", FONT, FONT_SCALE, LINE_THICKNESS)[0][0]
@@ -356,25 +292,25 @@ while frame_read:
                             HEIGHT - 22), FONT, FONT_SCALE, BLACK, LINE_THICKNESS)
 
             cv2.line(frame, (x, y), (x + 20, y),
-                     RED if dive else ui_text_clr, 2)
+                     RED if manual_control.dive else ui_text_clr, 2)
             cv2.line(frame, (x, y), (x, y + 20),
-                     RED if dive else ui_text_clr, 2)
+                     RED if manual_control.dive else ui_text_clr, 2)
             cv2.line(frame, (x, y + h), (x, y + h - 20),
-                     RED if dive else ui_text_clr, 2)
+                     RED if manual_control.dive else ui_text_clr, 2)
             cv2.line(frame, (x, y + h), (x + 20, y + h),
-                     RED if dive else ui_text_clr, 2)
+                     RED if manual_control.dive else ui_text_clr, 2)
 
             cv2.line(frame, (x + w, y), (x + w - 20, y),
-                     RED if dive else ui_text_clr, 2)
+                     RED if manual_control.dive else ui_text_clr, 2)
             cv2.line(frame, (x + w, y), (x + w, y + 20),
-                     RED if dive else ui_text_clr, 2)
+                     RED if manual_control.dive else ui_text_clr, 2)
             cv2.line(frame, (x + w, y + h), (x + w, y + h - 20),
-                     RED if dive else ui_text_clr, 2)
+                     RED if manual_control.dive else ui_text_clr, 2)
             cv2.line(frame, (x + w, y + h), (x + w - 20, y + h),
-                     RED if dive else ui_text_clr, 2)
+                     RED if manual_control.dive else ui_text_clr, 2)
 
             cv2.circle(frame, (x + w // 2, y + h // 2), 3,
-                       RED if dive else ui_text_clr, -1)
+                       RED if manual_control.dive else ui_text_clr, -1)
             # top
             cv2.line(frame, (x + w // 2, y), (x + w // 2, 0), ui_text_clr, 1)
             # left
@@ -386,7 +322,7 @@ while frame_read:
             cv2.line(frame, (x + w // 2, y + h),
                      (x + w // 2, HEIGHT), WHITE, 1)
 
-            if flt_ctrl_active == False and manual_control == False:
+            if not flt_ctrl_active and not manual_control.manual:
                 flight_ctrl_thread = threading.Thread(
                     target=guidance_system, daemon=True)
                 flight_ctrl_thread.start()
@@ -396,9 +332,11 @@ while frame_read:
         print("[FEED] - Interface error\n", error)
     try:
         cv2.imshow("FEED", frame)
+        cv2.imshow("DESIGNATOR", empty_frame)
+
     except Exception as error:
         print("[FEED] - Display error\n", error)
-        key_listener.join()
+        ManualControl.terminate()
         drone.streamoff()
         drone.end()
         break
@@ -406,8 +344,7 @@ while frame_read:
     start_time = time.time()
     if (cv2.waitKey(1) & 0xff) == 27:
         break
-
-key_listener.join()
+ManualControl.terminate()
 cv2.destroyAllWindows()
 drone.streamoff()
 drone.end()
