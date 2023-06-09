@@ -7,6 +7,7 @@ import numpy as np
 from pynput import keyboard
 from pid import PID
 import matplotlib.pyplot as plt
+from manual_control import ManualControl
 
 init_alt = 0
 relative_alt = 0
@@ -37,9 +38,6 @@ tracker_thread = None
 tracking = False
 roi = None
 tracker_ret = False
-first_point = None
-second_point = None
-point_counter = 0
 lock = False
 roi_size = [100, 100]
 roi_delta = 20
@@ -58,6 +56,8 @@ X_PID = [0.2, 0.0, 0.12]
 yaw_pid_array = []
 yaw_pid_time = []
 drone = Tello()
+
+manual_control = ManualControl(drone)
 
 try:
     drone.connect()
@@ -127,46 +127,44 @@ def guidance_system():
 
 
 def manual_controller(key):
-    global manual_control, drone, default_dist, dive
+    global manual_control, drone, default_dist, dive, roi_delta
     try:
-        if key.char == 'z':
-            if manual_control:
-                manual_control = False
-                drone.send_rc_control(0, 0, 0, 0)
-            else:
-                manual_control = True
-                drone.send_rc_control(0, 0, 0, 0)
-
-        if key.char == 'x':
-            if dive != True:
-                dive = True
-            else:
-                dive = False
-
+        if key == 'z':
+            manual_control = not manual_control
+        elif key == 'x':
+            dive = not dive
         if manual_control:
-            if key.char == 'i':
+            if key == 'i':
                 drone.send_rc_control(0, 0, 0, 0)
                 drone.takeoff()
-            elif key.char == 'k':
+            elif key == 'k':
+                drone.send_rc_control(0, 0, 0, 0)
                 drone.land()
-            elif key.char == 'w':
+            elif key == 'w':
                 drone.move_forward(default_dist)
-            elif key.char == 'a':
-                drone.move_left(default_dist)
-            elif key.char == 'd':
-                drone.move_right(default_dist)
-            elif key.char == 's':
+            elif key == 's':
                 drone.move_back(default_dist)
-            elif key.char == 'q':
-                drone.rotate_counter_clockwise(default_dist)
-            elif key.char == 'e':
-                drone.rotate_clockwise(default_dist)
-            elif key.char == 'up':
+            elif key == 'a':
+                drone.move_left(default_dist)
+            elif key == 'd':
+                drone.move_right(default_dist)
+            elif key == 'q':
+                drone.rotate_counter_clockwise(45)
+            elif key == 'e':
+                drone.rotate_clockwise(45)
+            elif key == "Key.up":
                 drone.move_up(default_dist)
-            elif key.char == 'down':
+            elif key == "Key.down":
                 drone.move_down(default_dist)
+            elif key == "Key.left":
+                roi_size[0] += roi_delta
+                roi_size[1] += roi_delta
+            elif key == "Key.right":
+                roi_size[0] -= roi_delta
+                roi_size[1] -= roi_delta
+
     except:
-        print("[MNUL CTRL] - Invalid key")
+        print("[ManualControl] - Invalid key.")
 
 
 def on_release(key):
@@ -175,19 +173,9 @@ def on_release(key):
 
 
 def mouse_event_handler(event, x, y, flags, param):
-    global tracker, tracking, point_counter, first_point, second_point, reset_track, cursor_pos, roi_size
-
+    global tracker, tracking, reset_track, cursor_pos, roi_size
     cursor_pos[0] = x - roi_size[0] // 2
     cursor_pos[1] = y - roi_size[1] // 2
-
-    if event == cv2.EVENT_MBUTTONDOWN:
-        roi_size[0] += roi_delta
-        roi_size[1] += roi_delta
-
-    if event == cv2.EVENT_RBUTTONDOWN:
-        roi_size[0] -= roi_delta
-        roi_size[1] -= roi_delta
-
     if event == cv2.EVENT_LBUTTONDOWN:
         if (not tracking and reset_track):
             reset_track = False
@@ -200,7 +188,7 @@ def mouse_event_handler(event, x, y, flags, param):
 
 
 def tracker_control():
-    global tracking, empty_frame, tracker, roi, tracker_ret, track_thread_active, reset_track, point_counter, drone
+    global tracking, empty_frame, tracker, roi, tracker_ret, track_thread_active, reset_track, drone
     tracker_lock.acquire()
     track_thread_active = True
     print("[TRACK] - TRACKING ACTIVE")
@@ -210,13 +198,11 @@ def tracker_control():
             if tracker_ret == False or reset_track == True:
                 tracking = False
                 reset_track = True
-                point_counter = 0
-            # time.sleep(0.01)
+
     except:
         print("[TRACK] - Invalid Coordinates")
         tracking = False
         reset_track = True
-        point_counter = 0
 
     track_thread_active = False
     tracker_thread = None
@@ -246,9 +232,8 @@ while frame_read:
     try:
         frame = frame_read.frame
         timer = cv2.getTickCount()
+        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         empty_frame = frame.copy()
-        empty_frame = cv2.cvtColor(empty_frame, cv2.COLOR_BGR2RGB)
-        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
         # top right (fps)
         elapsed_time = time.time() - start_time
