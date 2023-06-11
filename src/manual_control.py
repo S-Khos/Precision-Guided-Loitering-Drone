@@ -3,7 +3,7 @@ from pynput import keyboard
 import threading
 
 
-class ManualControl(object):
+class KeyControl(object):
     def __init__(self, drone):
         self.drone = drone
         self.dive = False
@@ -13,15 +13,20 @@ class ManualControl(object):
         self.designator_roi_size = [100, 100]
 
         self.key_listener = keyboard.Listener(
-            on_press=self.on_press, on_release=self.on_release)
+            on_press=self.on_press, on_release=self.on_release, daemon=True)
         self.key_listener.start()
 
     def on_release(self, key):
-        if key == 'Key.esc':
-            return False
+        return True
 
     def terminate(self):
         self.key_listener.join()
+
+    def get_manual(self):
+        return self.manual
+
+    def flip_manual(self):
+        self.manual = not self.manual
 
     def on_press(self, key):
         try:
@@ -64,19 +69,21 @@ class ManualControl(object):
 
 
 class CursorControl(object):
-    def __init__(manual_control):
-        self.manual_control = manual_control
+    def __init__(key_control, backend):
+        self.key_control = key_control
+        self.backend = backend
         self.cursor_pos = [0, 0]
 
     def event_handler(event, x, y, flags, param):
-        cursor_pos[0] = x - self.manual_control.designator_roi_size[0] // 2
-        cursor_pos[1] = y - self.manual_control.designator_roi_size[1] // 2
+        cursor_pos[0] = x - self.key_control.designator_roi_size[0] // 2
+        cursor_pos[1] = y - self.key_control.designator_roi_size[1] // 2
         if event == cv2.EVENT_LBUTTONDOWN:
-            if (not tracking and reset_track):
-                reset_track = False
-                tracker = cv2.legacy.TrackerCSRT_create()
-                tracker.init(
-                    empty_frame, (self.cursor_pos[0], cursor_pos[1], designator_roi_size[0], designator_roi_size[1]))
-                tracking = True
+            if (not self.backend.tracking and self.backend.reset_track):
+                self.backend.reset_track = False
+                # tracker = cv2.legacy.TrackerCSRT_create()
+                # tracker.init(
+                #    empty_frame, (self.cursor_pos[0], cursor_pos[1], designator_roi_size[0], designator_roi_size[1]))
+                self.backend.init_tracker = True
+                self.backend.tracking = True
             else:
-                reset_track = True
+                self.reset_track = True

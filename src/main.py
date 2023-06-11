@@ -7,7 +7,8 @@ import numpy as np
 from pynput import keyboard
 from pid import PID
 import matplotlib.pyplot as plt
-from manual_control import ManualControl
+from manual_control import KeyControl, CursorControl
+from tracker import Tracker
 
 init_alt = 0
 relative_alt = 0
@@ -54,7 +55,10 @@ yaw_pid_array = []
 yaw_pid_time = []
 drone = Tello()
 
-manual_control = ManualControl(drone)
+manual_control = KeyControl(drone)
+# cursor_control = CursorControl(manual_control)
+# tracker = Tracker(cursor_control, manual_control)
+
 
 try:
     drone.connect()
@@ -117,7 +121,7 @@ def guidance_system():
         x_pid.reset()
         flt_ctrl_lock.acquire()
         flt_ctrl_active = False
-        manual_control.manual = False
+        manual_control.flip_manual()
         flt_ctrl_lock.release()
         drone.send_rc_control(0, 0, 0, 0)
         print("[FLT CTRL] - Error occured\n", error)
@@ -320,10 +324,10 @@ while frame_read:
             cv2.line(frame, (x, y + h // 2), (0, y + h // 2), ui_text_clr, 1)
             # right
             cv2.line(frame, (x + w, y + h // 2),
-                     (WIDTH, y + h // 2), WHITE, 1)
+                     (WIDTH, y + h // 2), ui_text_clr, 1)
             # bottom
             cv2.line(frame, (x + w // 2, y + h),
-                     (x + w // 2, HEIGHT), WHITE, 1)
+                     (x + w // 2, HEIGHT), ui_text_clr, 1)
 
             if not flt_ctrl_active and manual_control.manual:
                 flight_ctrl_thread = threading.Thread(
@@ -339,7 +343,6 @@ while frame_read:
 
     except Exception as error:
         print("[FEED] - Display error\n", error)
-        manual_control.terminate()
         drone.streamoff()
         drone.end()
         break
@@ -348,7 +351,6 @@ while frame_read:
     if (cv2.waitKey(1) & 0xff) == 27:
         break
 
-manual_control.terminate()
 cv2.destroyAllWindows()
 drone.streamoff()
 drone.end()
