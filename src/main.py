@@ -8,7 +8,6 @@ from pynput import keyboard
 from pid import PID
 import matplotlib.pyplot as plt
 from manual_control import KeyControl, CursorControl
-from tracker import Tracker
 
 init_alt = 0
 relative_alt = 0
@@ -59,7 +58,6 @@ manual_control = KeyControl(drone)
 # cursor_control = CursorControl(manual_control)
 # tracker = Tracker(cursor_control, manual_control)
 
-
 try:
     drone.connect()
     if (drone.get_battery() <= 20):
@@ -68,11 +66,8 @@ try:
 except:
     print("[DRONE] - Connection Error")
 
-time.sleep(0.5)
-
 try:
     drone.streamon()
-    time.sleep(0.5)
     frame_read = drone.get_frame_read()
 except:
     print("[DRONE] - No feed signal")
@@ -170,7 +165,7 @@ cv2.namedWindow("FEED", cv2.WINDOW_NORMAL)
 cv2.namedWindow("DESIGNATOR", cv2.WINDOW_NORMAL)
 cv2.moveWindow("FEED", int((1920 // 4) - (WIDTH // 2)),
                int((1080 // 2) - (HEIGHT // 2)))
-cv2.moveWindow("DESIGNATOR", int((1920 // 4) + (WIDTH // 2)),
+cv2.moveWindow("DESIGNATOR", int((1920 // 4) + (WIDTH // 2) + 10),
                int((1080 // 2) - (HEIGHT // 2)))
 
 cv2.setMouseCallback("DESIGNATOR", mouse_event_handler)
@@ -253,12 +248,12 @@ while frame_read:
             cv2.putText(frame, "AUTO", (WIDTH//2 - 20, 25),
                         FONT, FONT_SCALE, BLACK, LINE_THICKNESS)
 
-        if tracking and track_thread_active == False:
+        if tracking and not track_thread_active:
             tracker_thread = threading.Thread(
                 target=tracker_control, daemon=True)
             tracker_thread.start()
 
-        if tracking == False and track_thread_active == False and tracker_thread:
+        if not tracking and not track_thread_active and tracker_thread:
             print("[TRACK] - TRACKING RESET")
             tracker_thread = None
 
@@ -273,10 +268,10 @@ while frame_read:
                      (0, cursor_pos[1] + manual_control.designator_roi_size[1] // 2), ui_text_clr, 1)
             # right
             cv2.line(empty_frame, (cursor_pos[0] + manual_control.designator_roi_size[0], cursor_pos[1] + manual_control.designator_roi_size[1] // 2),
-                     (WIDTH, cursor_pos[1] + manual_control.designator_roi_size[1] // 2), WHITE, 1)
+                     (WIDTH, cursor_pos[1] + manual_control.designator_roi_size[1] // 2), ui_text_clr, 1)
             # bottom
             cv2.line(empty_frame, (cursor_pos[0] + manual_control.designator_roi_size[0] // 2, cursor_pos[1] + manual_control.designator_roi_size[1]),
-                     (cursor_pos[0] + manual_control.designator_roi_size[0] // 2, HEIGHT), WHITE, 1)
+                     (cursor_pos[0] + manual_control.designator_roi_size[0] // 2, HEIGHT), ui_text_clr, 1)
 
         # active tracking / lock
         if tracker_ret and tracking:
@@ -329,7 +324,7 @@ while frame_read:
             cv2.line(frame, (x + w // 2, y + h),
                      (x + w // 2, HEIGHT), ui_text_clr, 1)
 
-            if not flt_ctrl_active and manual_control.manual:
+            if not flt_ctrl_active and not manual_control.manual:
                 flight_ctrl_thread = threading.Thread(
                     target=guidance_system, daemon=True)
                 flight_ctrl_thread.start()
