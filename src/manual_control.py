@@ -1,6 +1,7 @@
 from djitellopy import Tello
 from pynput import keyboard
 import threading
+import cv2
 
 
 class KeyControl(object):
@@ -69,21 +70,29 @@ class KeyControl(object):
 
 
 class CursorControl(object):
-    def __init__(key_control, backend):
+    def __init__(self, key_control, frontend):
+        # add backend for empty frame
         self.key_control = key_control
-        self.backend = backend
-        self.cursor_pos = [0, 0]
+        self.frontend = frontend
+        self.reset_track = True
+        self.tracking = False
+        self.init_tracker = False
+        self.tracker = None
+        self.cursor_pos = [
+            frontend.get_feed_centre()[0], frontend.get_feed_centre()[1]]
 
-    def event_handler(event, x, y, flags, param):
-        cursor_pos[0] = x - self.key_control.designator_roi_size[0] // 2
-        cursor_pos[1] = y - self.key_control.designator_roi_size[1] // 2
+    def event_handler(self, event, x, y, flags, param):
+        self.cursor_pos[0] = int(
+            x - self.key_control.designator_roi_size[0] / 2)
+        self.cursor_pos[1] = int(
+            y - self.key_control.designator_roi_size[1] / 2)
         if event == cv2.EVENT_LBUTTONDOWN:
-            if (not self.backend.tracking and self.backend.reset_track):
-                self.backend.reset_track = False
-                # tracker = cv2.legacy.TrackerCSRT_create()
-                # tracker.init(
-                #    empty_frame, (self.cursor_pos[0], cursor_pos[1], designator_roi_size[0], designator_roi_size[1]))
-                self.backend.init_tracker = True
-                self.backend.tracking = True
+            if (not self.tracking and self.reset_track):
+                self.tracker = cv2.legacy.TrackerCSRT_create()
+                self.tracker.init(
+                    self.empty_frame, (self.cursor_pos[0], self.cursor_pos[1], self.key_control.designator_roi_size[0], self.key_control.designator_roi_size[1]))
+                self.reset_track = False
+                self.init_tracker = True
+                self.tracking = True
             else:
                 self.reset_track = True

@@ -4,6 +4,8 @@ import time
 import threading
 import math
 from djitellopy import Tello
+from tracker import Tracker
+from manual_control import ManualControl
 
 
 class BackEnd(object):

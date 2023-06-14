@@ -3,11 +3,11 @@ import cv2
 import math
 import time
 import threading
-import numpy as np
 from pynput import keyboard
 from pid import PID
 import matplotlib.pyplot as plt
 from manual_control import KeyControl, CursorControl
+from frontend import FrontEnd
 
 init_alt = 0
 relative_alt = 0
@@ -32,20 +32,14 @@ empty_frame = None
 
 tracker_lock = threading.Lock()
 track_thread_active = False
-reset_track = True
 tracker_thread = None
-tracking = False
 roi = None
 tracker_ret = False
 lock = False
-roi_size = [100, 100]
-cursor_pos = [CENTRE_X, CENTRE_Y]
 
 flt_ctrl_active = False
 flt_ctrl_lock = threading.Lock()
 flight_ctrl_thread = None
-
-# add derivative to reduce overshoot, add integral to reduce steady state error, add proportional to reduce rise time
 
 YAW_PID = [0.32, 0.05, 0.11]  # 0.32, 0, 0.06
 Y_PID = [1.3, 0.18, 0.1]  # 0.1, 0.3, 0.3,
@@ -54,8 +48,9 @@ yaw_pid_array = []
 yaw_pid_time = []
 drone = Tello()
 
+frontend = FrontEnd(drone)
 manual_control = KeyControl(drone)
-# cursor_control = CursorControl(manual_control)
+cursor_control = CursorControl(manual_control, frontend)
 # tracker = Tracker(cursor_control, manual_control)
 
 try:
@@ -74,7 +69,7 @@ except:
 
 
 def guidance_system():
-    global CENTRE_X, CENTRE_Y, drone, yaw_pid, y_pid, x_pid, roi, tracker_ret, flt_ctrl_lock, flt_ctrl_active, tracking, manual_control, lock, altitude
+    global CENTRE_X, CENTRE_Y, drone, yaw_pid, y_pid, x_pid, roi, tracker_ret, flt_ctrl_lock, flt_ctrl_active, manual_control, cursor_control, lock, altitude
 
     try:
         print("[FLT CTRL] - ACTIVE")
@@ -83,7 +78,7 @@ def guidance_system():
         x_pid = PID(X_PID[0], X_PID[1], X_PID[2], CENTRE_X, -80, 80)
         y_pid = PID(Y_PID[0], Y_PID[1], Y_PID[2], CENTRE_Y, -100, 100)
 
-        while tracking and tracker_ret and not manual_control.manual:
+        while cursor_control.tracking and tracker_ret and not manual_control.manual:
             x, y, w, h = [int(value) for value in roi]
             targetX = x + w // 2
             targetY = y + h // 2
@@ -122,37 +117,22 @@ def guidance_system():
         print("[FLT CTRL] - Error occured\n", error)
 
 
-def mouse_event_handler(event, x, y, flags, param):
-    global tracker, tracking, reset_track, cursor_pos, manual_control
-    cursor_pos[0] = x - manual_control.designator_roi_size[0] // 2
-    cursor_pos[1] = y - manual_control.designator_roi_size[1] // 2
-    if event == cv2.EVENT_LBUTTONDOWN:
-        if (not tracking and reset_track):
-            reset_track = False
-            tracker = cv2.legacy.TrackerCSRT_create()
-            tracker.init(
-                empty_frame, (cursor_pos[0], cursor_pos[1], manual_control.designator_roi_size[0], manual_control.designator_roi_size[1]))
-            tracking = True
-        else:
-            reset_track = True
-
-
 def tracker_control():
-    global tracking, empty_frame, tracker, roi, tracker_ret, track_thread_active, reset_track, drone
+    global empty_frame, roi, tracker_ret, track_thread_active, drone, cursor_control
     tracker_lock.acquire()
     track_thread_active = True
     print("[TRACK] - TRACKING ACTIVE")
     try:
-        while tracking:
-            tracker_ret, roi = tracker.update(empty_frame)
-            if tracker_ret == False or reset_track == True:
-                tracking = False
-                reset_track = True
+        while cursor_control.tracking:
+            tracker_ret, roi = cursor_control.tracker.update(empty_frame)
+            if not tracker_ret or cursor_control.reset_track:
+                cursor_control.tracking = False
+                cursor_control.reset_track = True
 
     except:
         print("[TRACK] - Invalid Coordinates")
-        tracking = False
-        reset_track = True
+        cursor_control.tracking = False
+        cursor_control.reset_track = True
 
     track_thread_active = False
     tracker_thread = None
@@ -168,7 +148,7 @@ cv2.moveWindow("FEED", int((1920 // 4) - (WIDTH // 2)),
 cv2.moveWindow("DESIGNATOR", int((1920 // 4) + (WIDTH // 2) + 10),
                int((1080 // 2) - (HEIGHT // 2)))
 
-cv2.setMouseCallback("DESIGNATOR", mouse_event_handler)
+cv2.setMouseCallback("DESIGNATOR", cursor_control.event_handler)
 
 start_time = time.time()
 
@@ -248,33 +228,33 @@ while frame_read:
             cv2.putText(frame, "AUTO", (WIDTH//2 - 20, 25),
                         FONT, FONT_SCALE, BLACK, LINE_THICKNESS)
 
-        if tracking and not track_thread_active:
+        if cursor_control.tracking and not track_thread_active:
             tracker_thread = threading.Thread(
                 target=tracker_control, daemon=True)
             tracker_thread.start()
 
-        if not tracking and not track_thread_active and tracker_thread:
+        if not cursor_control.tracking and not track_thread_active and tracker_thread:
             print("[TRACK] - TRACKING RESET")
             tracker_thread = None
 
-        if not tracking:
-            cv2.rectangle(empty_frame, (cursor_pos[0], cursor_pos[1]), (
-                cursor_pos[0] + manual_control.designator_roi_size[0], cursor_pos[1] + manual_control.designator_roi_size[1]), ui_text_clr, 1)
+        if not cursor_control.tracking:
+            cv2.rectangle(empty_frame, (cursor_control.cursor_pos[0], cursor_control.cursor_pos[1]), (
+                cursor_control.cursor_pos[0] + manual_control.designator_roi_size[0], cursor_control.cursor_pos[1] + manual_control.designator_roi_size[1]), ui_text_clr, 1)
             # top
-            cv2.line(empty_frame, (cursor_pos[0] + manual_control.designator_roi_size[0] // 2, cursor_pos[1]),
-                     (cursor_pos[0] + manual_control.designator_roi_size[0] // 2, 0), ui_text_clr, 1)
+            cv2.line(empty_frame, (cursor_control.cursor_pos[0] + manual_control.designator_roi_size[0] // 2, cursor_control.cursor_pos[1]),
+                     (cursor_control.cursor_pos[0] + manual_control.designator_roi_size[0] // 2, 0), ui_text_clr, 1)
             # left
-            cv2.line(empty_frame, (cursor_pos[0], cursor_pos[1] + manual_control.designator_roi_size[1] // 2),
-                     (0, cursor_pos[1] + manual_control.designator_roi_size[1] // 2), ui_text_clr, 1)
+            cv2.line(empty_frame, (cursor_control.cursor_pos[0], cursor_control.cursor_pos[1] + manual_control.designator_roi_size[1] // 2),
+                     (0, cursor_control.cursor_pos[1] + manual_control.designator_roi_size[1] // 2), ui_text_clr, 1)
             # right
-            cv2.line(empty_frame, (cursor_pos[0] + manual_control.designator_roi_size[0], cursor_pos[1] + manual_control.designator_roi_size[1] // 2),
-                     (WIDTH, cursor_pos[1] + manual_control.designator_roi_size[1] // 2), ui_text_clr, 1)
+            cv2.line(empty_frame, (cursor_control.cursor_pos[0] + manual_control.designator_roi_size[0], cursor_control.cursor_pos[1] + manual_control.designator_roi_size[1] // 2),
+                     (WIDTH, cursor_control.cursor_pos[1] + manual_control.designator_roi_size[1] // 2), ui_text_clr, 1)
             # bottom
-            cv2.line(empty_frame, (cursor_pos[0] + manual_control.designator_roi_size[0] // 2, cursor_pos[1] + manual_control.designator_roi_size[1]),
-                     (cursor_pos[0] + manual_control.designator_roi_size[0] // 2, HEIGHT), ui_text_clr, 1)
+            cv2.line(empty_frame, (cursor_control.cursor_pos[0] + manual_control.designator_roi_size[0] // 2, cursor_control.cursor_pos[1] + manual_control.designator_roi_size[1]),
+                     (cursor_control.cursor_pos[0] + manual_control.designator_roi_size[0] // 2, HEIGHT), ui_text_clr, 1)
 
         # active tracking / lock
-        if tracker_ret and tracking:
+        if tracker_ret and cursor_control.tracking:
             x, y, w, h = [int(value) for value in roi]
             if (CENTRE_X > x and CENTRE_X < x + w and CENTRE_Y > y and CENTRE_Y < y + h and not manual_control.manual):
                 lock = True
