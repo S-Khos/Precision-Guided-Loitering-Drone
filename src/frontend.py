@@ -26,10 +26,10 @@ class FrontEnd(object):
         self.frame = None
         self.designator_frame = None
 
-    def get_feed_size(self):
+    def get_frame_size(self):
         return (FrontEnd.FRAME_WIDTH, FrontEnd.FRAME_HEIGHT)
 
-    def get_feed_centre(self):
+    def get_frame_centre(self):
         return (FrontEnd.CENTRE_X, FrontEnd.CENTRE_Y)
 
     def get_designator_frame(self):

@@ -75,8 +75,7 @@ class CursorControl(object):
         self.key_control = key_control
         self.frontend = frontend
         self.tracker = tracker
-        self.cursor_pos = [
-            frontend.get_feed_centre()[0], frontend.get_feed_centre()[1]]
+        self.cursor_pos = [frontend.CENTRE_X, frontend.CENTRE_Y]
 
     def event_handler(self, event, x, y, flags, param):
         self.cursor_pos[0] = int(
