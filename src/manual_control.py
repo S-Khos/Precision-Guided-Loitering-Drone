@@ -14,10 +14,10 @@ class KeyControl(object):
         self.designator_roi_size = [100, 100]
 
         self.key_listener = keyboard.Listener(
-            on_press=self.on_press, on_release=self.on_release, daemon=True)
+            on_press=self.on_key_press, on_release=self.on_key_release, daemon=True)
         self.key_listener.start()
 
-    def on_release(self, key):
+    def on_key_release(self, key):
         return True
 
     def terminate(self):
@@ -29,7 +29,7 @@ class KeyControl(object):
     def flip_manual(self):
         self.manual = not self.manual
 
-    def on_press(self, key):
+    def on_key_press(self, key):
         try:
             if key.char == 'z':
                 self.manual = not self.manual
@@ -70,14 +70,11 @@ class KeyControl(object):
 
 
 class CursorControl(object):
-    def __init__(self, key_control, frontend):
+    def __init__(self, key_control, frontend, tracker):
         # add backend for empty frame
         self.key_control = key_control
         self.frontend = frontend
-        self.reset_track = True
-        self.tracking = False
-        self.init_tracker = False
-        self.tracker = None
+        self.tracker = tracker
         self.cursor_pos = [
             frontend.get_feed_centre()[0], frontend.get_feed_centre()[1]]
 
@@ -87,12 +84,8 @@ class CursorControl(object):
         self.cursor_pos[1] = int(
             y - self.key_control.designator_roi_size[1] / 2)
         if event == cv2.EVENT_LBUTTONDOWN:
-            if (not self.tracking and self.reset_track):
-                self.tracker = cv2.legacy.TrackerCSRT_create()
-                self.tracker.init(
-                    self.empty_frame, (self.cursor_pos[0], self.cursor_pos[1], self.key_control.designator_roi_size[0], self.key_control.designator_roi_size[1]))
-                self.reset_track = False
-                self.init_tracker = True
-                self.tracking = True
+            if not self.tracker.tracking and self.tracker.reset_tracker:
+                self.tracker.init_tracker(self.frontend.get_designator_frame())
             else:
-                self.reset_track = True
+                self.tracker.reset_tracker = True
+                self.tracker.tracking = False

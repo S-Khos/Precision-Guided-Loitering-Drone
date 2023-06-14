@@ -35,3 +35,27 @@
 #             tracking = True
 #         else:
 #             reset_track = True
+
+
+def tracker_control():
+    global empty_frame, roi, tracker_ret, track_thread_active, drone, cursor_control
+    tracker_lock.acquire()
+    track_thread_active = True
+    print("[TRACK] - TRACKING ACTIVE")
+    try:
+        while tracker.tracking:
+            tracker_ret, roi = tracker.update(empty_frame)
+            if not tracker_ret or cursor_control.reset_track:
+                cursor_control.tracking = False
+                cursor_control.reset_track = True
+
+    except:
+        print("[TRACK] - Invalid Coordinates")
+        cursor_control.tracking = False
+        cursor_control.reset_track = True
+
+    track_thread_active = False
+    tracker_thread = None
+    tracker_lock.release()
+    drone.send_rc_control(0, 0, 0, 0)
+    print("[TRACK] - TRACKING TERMINATED")

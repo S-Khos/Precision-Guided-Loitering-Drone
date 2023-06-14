@@ -26,30 +26,14 @@ class BackEnd(object):
     Y_PID = [1.3, 0.18, 0.1]  # 0.1, 0.3, 0.3,
     X_PID = [0.2, 0.0, 0.12]
 
-    def __init__(self, drone, centre_width, centre_height):
+    def __init__(self, drone, frontend):
         self.drone = drone
-        self.CENTRE_X = centre_width
-        self.CENTRE_Y = centre_height
+        self.frontend = frontend
         self.fps_init_time = time.time()
         self.manual_control = None
 
     def process(self, frame, manual_control):
-        self.manual_control = manual_control
-
-        if tracking and not tracker_active:
-            tracker_thread = threading.Thread(
-                target=tracker_control, daemon=True)
-            tracker_thread.start()
-
-        if not tracking and not tracker_active and tracker_thread:
-            print("[TRACK] - TRACKING RESET")
-            tracker_thread = None
-
-        if not flt_ctrl_active and not manual_ctrl:
-            flight_ctrl_thread = threading.Thread(
-                target=guidance_system, daemon=True)
-            flight_ctrl_thread.start()
-            flt_ctrl_active = True
+        pass
 
     def is_tracking(self):
         return tracking

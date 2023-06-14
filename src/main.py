@@ -8,26 +8,15 @@ from pid import PID
 import matplotlib.pyplot as plt
 from manual_control import KeyControl, CursorControl
 from frontend import FrontEnd
+from tracker import Tracker
+from backend import Backend
 
 init_alt = 0
 relative_alt = 0
 altitude = 0
 spd_mag = 0
-default_dist = 30
 
-WIDTH = 960
-HEIGHT = 720
-CENTRE_X = WIDTH // 2
-CENTRE_Y = HEIGHT // 2
-FONT = cv2.FONT_HERSHEY_COMPLEX
-FONT_SCALE = .6
-RED = (0, 0, 255)
-GREEN = (0, 255, 0)
-BLUE = (255, 0, 0)
-WHITE = (255, 255, 255)
-BLACK = (0, 0, 0)
-ui_text_clr = GREEN
-LINE_THICKNESS = 1
+
 empty_frame = None
 
 tracker_lock = threading.Lock()
@@ -41,17 +30,12 @@ flt_ctrl_active = False
 flt_ctrl_lock = threading.Lock()
 flight_ctrl_thread = None
 
-YAW_PID = [0.32, 0.05, 0.11]  # 0.32, 0, 0.06
-Y_PID = [1.3, 0.18, 0.1]  # 0.1, 0.3, 0.3,
-X_PID = [0.2, 0.0, 0.12]
-yaw_pid_array = []
-yaw_pid_time = []
-drone = Tello()
 
+drone = Tello()
 frontend = FrontEnd(drone)
 manual_control = KeyControl(drone)
 cursor_control = CursorControl(manual_control, frontend)
-# tracker = Tracker(cursor_control, manual_control)
+tracker = Tracker(cursor_control, manual_control, frontend)
 
 try:
     drone.connect()
@@ -69,14 +53,15 @@ except:
 
 
 def guidance_system():
-    global CENTRE_X, CENTRE_Y, drone, yaw_pid, y_pid, x_pid, roi, tracker_ret, flt_ctrl_lock, flt_ctrl_active, manual_control, cursor_control, lock, altitude
+    global drone, yaw_pid, y_pid, x_pid, roi, tracker_ret, flt_ctrl_lock, flt_ctrl_active, manual_control, cursor_control, lock, altitude, frontend
 
     try:
         print("[FLT CTRL] - ACTIVE")
 
-        yaw_pid = PID(YAW_PID[0], YAW_PID[1], YAW_PID[2], CENTRE_X, -100, 100)
-        x_pid = PID(X_PID[0], X_PID[1], X_PID[2], CENTRE_X, -80, 80)
-        y_pid = PID(Y_PID[0], Y_PID[1], Y_PID[2], CENTRE_Y, -100, 100)
+        yaw_pid = PID(YAW_PID[0], YAW_PID[1], YAW_PID[2],
+                      frontend.CENTRE_X, -100, 100)
+        x_pid = PID(X_PID[0], X_PID[1], X_PID[2], frontend.CENTRE_X, -80, 80)
+        y_pid = PID(Y_PID[0], Y_PID[1], Y_PID[2], frontend.CENTRE_Y, -100, 100)
 
         while cursor_control.tracking and tracker_ret and not manual_control.manual:
             x, y, w, h = [int(value) for value in roi]
@@ -94,7 +79,7 @@ def guidance_system():
                 drone.send_rc_control(-x_velocity if abs(x_velocity)
                                       > 60 else 0, 90 if altitude > 1 and manual_control.dive else 0, y_velocity, -yaw_velocity)
 
-            time.sleep(0.01)
+            time.sleep(0.1)
 
         yaw_pid.reset()
         y_pid.reset()
@@ -117,35 +102,11 @@ def guidance_system():
         print("[FLT CTRL] - Error occured\n", error)
 
 
-def tracker_control():
-    global empty_frame, roi, tracker_ret, track_thread_active, drone, cursor_control
-    tracker_lock.acquire()
-    track_thread_active = True
-    print("[TRACK] - TRACKING ACTIVE")
-    try:
-        while cursor_control.tracking:
-            tracker_ret, roi = cursor_control.tracker.update(empty_frame)
-            if not tracker_ret or cursor_control.reset_track:
-                cursor_control.tracking = False
-                cursor_control.reset_track = True
-
-    except:
-        print("[TRACK] - Invalid Coordinates")
-        cursor_control.tracking = False
-        cursor_control.reset_track = True
-
-    track_thread_active = False
-    tracker_thread = None
-    tracker_lock.release()
-    drone.send_rc_control(0, 0, 0, 0)
-    print("[TRACK] - TRACKING TERMINATED")
-
-
 cv2.namedWindow("FEED", cv2.WINDOW_NORMAL)
 cv2.namedWindow("DESIGNATOR", cv2.WINDOW_NORMAL)
-cv2.moveWindow("FEED", int((1920 // 4) - (WIDTH // 2)),
+cv2.moveWindow("FEED", int((1920 // 4) - (frontend.WIDTH // 2)),
                int((1080 // 2) - (HEIGHT // 2)))
-cv2.moveWindow("DESIGNATOR", int((1920 // 4) + (WIDTH // 2) + 10),
+cv2.moveWindow("DESIGNATOR", int((1920 // 4) + (frontend.WIDTH // 2) + 10),
                int((1080 // 2) - (HEIGHT // 2)))
 
 cv2.setMouseCallback("DESIGNATOR", cursor_control.event_handler)
@@ -164,7 +125,7 @@ while frame_read:
         fps = 1 / elapsed_time
         fps_size = cv2.getTextSize("FPS  {}".format(
             str(int(fps))), FONT, FONT_SCALE, LINE_THICKNESS)[0][0]
-        cv2.putText(frame, "FPS  {}".format(str(int(fps))), (WIDTH -
+        cv2.putText(frame, "FPS  {}".format(str(int(fps))), (frontend.WIDTH -
                     fps_size - 5, 25), FONT, FONT_SCALE, ui_text_clr, LINE_THICKNESS)
 
         altitude = drone.get_distance_tof() / 30.48
@@ -178,22 +139,22 @@ while frame_read:
                     (5, 55), FONT, FONT_SCALE, ui_text_clr, LINE_THICKNESS)
 
         # crosshair
-        cv2.line(frame, (int(WIDTH / 2) - 20, int(HEIGHT / 2)),
-                 (int(WIDTH / 2) - 10, int(HEIGHT / 2)), ui_text_clr, 2)
-        cv2.line(frame, (int(WIDTH / 2) + 20, int(HEIGHT / 2)),
-                 (int(WIDTH / 2) + 10, int(HEIGHT / 2)), ui_text_clr, 2)
-        cv2.line(frame, (int(WIDTH / 2), int(HEIGHT / 2) - 20),
-                 (int(WIDTH / 2), int(HEIGHT / 2) - 10), ui_text_clr, 2)
-        cv2.line(frame, (int(WIDTH / 2), int(HEIGHT / 2) + 20),
-                 (int(WIDTH / 2), int(HEIGHT / 2) + 10), ui_text_clr, 2)
+        cv2.line(frame, (int(frontend.WIDTH / 2) - 20, int(HEIGHT / 2)),
+                 (int(frontend.WIDTH / 2) - 10, int(HEIGHT / 2)), ui_text_clr, 2)
+        cv2.line(frame, (int(frontend.WIDTH / 2) + 20, int(HEIGHT / 2)),
+                 (int(frontend.WIDTH / 2) + 10, int(HEIGHT / 2)), ui_text_clr, 2)
+        cv2.line(frame, (int(frontend.WIDTH / 2), int(HEIGHT / 2) - 20),
+                 (int(frontend.WIDTH / 2), int(HEIGHT / 2) - 10), ui_text_clr, 2)
+        cv2.line(frame, (int(frontend.WIDTH / 2), int(HEIGHT / 2) + 20),
+                 (int(frontend.WIDTH / 2), int(HEIGHT / 2) + 10), ui_text_clr, 2)
 
         # crosshair stats
         spd_size = cv2.getTextSize(
             "SPD  {} CM/S".format(abs(spd_mag)), FONT, FONT_SCALE, LINE_THICKNESS)[0][0]
-        cv2.putText(frame, "SPD  {} CM/S".format(abs(spd_mag)), ((WIDTH // 2) - 90 -
+        cv2.putText(frame, "SPD  {} CM/S".format(abs(spd_mag)), ((frontend.WIDTH // 2) - 90 -
                     spd_size, (HEIGHT // 2) - 100), FONT, FONT_SCALE, ui_text_clr, LINE_THICKNESS)
         cv2.putText(frame, "ALT  {:.1f} FT".format(drone.get_distance_tof() / 30.48), ((
-            WIDTH // 2) + 90, (HEIGHT // 2) - 100), FONT, FONT_SCALE, ui_text_clr, LINE_THICKNESS)
+            frontend.WIDTH // 2) + 90, (HEIGHT // 2) - 100), FONT, FONT_SCALE, ui_text_clr, LINE_THICKNESS)
 
         # bottom left telemtry
         cv2.putText(frame, "BRM  {}".format(int(drone.get_barometer() / 30.48)),
@@ -208,30 +169,26 @@ while frame_read:
         time_size = cv2.getTextSize(
             "T + {}".format(drone.get_flight_time()), FONT, FONT_SCALE, LINE_THICKNESS)[0][0]
         cv2.putText(frame, "T + {}".format(drone.get_flight_time()),
-                    (WIDTH - time_size - 5, 55), FONT, FONT_SCALE, ui_text_clr, LINE_THICKNESS)
+                    (frontend.WIDTH - time_size - 5, 55), FONT, FONT_SCALE, ui_text_clr, LINE_THICKNESS)
 
         # bottom compass
-        cv2.circle(frame, (WIDTH - 60, HEIGHT - 60), 50, ui_text_clr, 1)
-        cv2.arrowedLine(frame, (WIDTH - 60, HEIGHT - 60), (int(-50 * math.cos(math.radians(drone.get_yaw() + 90)) +
-                        WIDTH - 60), int((HEIGHT - 60) - (50 * math.sin(math.radians(drone.get_yaw() + 90))))), ui_text_clr, 1, tipLength=.15)
+        cv2.circle(frame, (frontend.WIDTH - 60, HEIGHT - 60),
+                   50, ui_text_clr, 1)
+        cv2.arrowedLine(frame, (frontend.WIDTH - 60, HEIGHT - 60), (int(-50 * math.cos(math.radians(drone.get_yaw() + 90)) +
+                        frontend.WIDTH - 60), int((HEIGHT - 60) - (50 * math.sin(math.radians(drone.get_yaw() + 90))))), ui_text_clr, 1, tipLength=.15)
 
         # top center
         if (manual_control.manual and not flt_ctrl_active):
 
-            cv2.rectangle(frame, (WIDTH//2 - 20, 10),
-                          (WIDTH//2 + 29, 28), ui_text_clr, -1)
-            cv2.putText(frame, "CTRL", (WIDTH//2 - 20, 25),
+            cv2.rectangle(frame, (frontend.WIDTH//2 - 20, 10),
+                          (frontend.WIDTH//2 + 29, 28), ui_text_clr, -1)
+            cv2.putText(frame, "CTRL", (frontend.WIDTH//2 - 20, 25),
                         FONT, FONT_SCALE, BLACK, LINE_THICKNESS)
         else:
-            cv2.rectangle(frame, (WIDTH//2 - 20, 10),
-                          (WIDTH//2 + 31, 28), ui_text_clr, -1)
-            cv2.putText(frame, "AUTO", (WIDTH//2 - 20, 25),
+            cv2.rectangle(frame, (frontend.WIDTH//2 - 20, 10),
+                          (frontend.WIDTH//2 + 31, 28), ui_text_clr, -1)
+            cv2.putText(frame, "AUTO", (frontend.WIDTH//2 - 20, 25),
                         FONT, FONT_SCALE, BLACK, LINE_THICKNESS)
-
-        if cursor_control.tracking and not track_thread_active:
-            tracker_thread = threading.Thread(
-                target=tracker_control, daemon=True)
-            tracker_thread.start()
 
         if not cursor_control.tracking and not track_thread_active and tracker_thread:
             print("[TRACK] - TRACKING RESET")
@@ -248,29 +205,29 @@ while frame_read:
                      (0, cursor_control.cursor_pos[1] + manual_control.designator_roi_size[1] // 2), ui_text_clr, 1)
             # right
             cv2.line(empty_frame, (cursor_control.cursor_pos[0] + manual_control.designator_roi_size[0], cursor_control.cursor_pos[1] + manual_control.designator_roi_size[1] // 2),
-                     (WIDTH, cursor_control.cursor_pos[1] + manual_control.designator_roi_size[1] // 2), ui_text_clr, 1)
+                     (frontend.WIDTH, cursor_control.cursor_pos[1] + manual_control.designator_roi_size[1] // 2), ui_text_clr, 1)
             # bottom
             cv2.line(empty_frame, (cursor_control.cursor_pos[0] + manual_control.designator_roi_size[0] // 2, cursor_control.cursor_pos[1] + manual_control.designator_roi_size[1]),
                      (cursor_control.cursor_pos[0] + manual_control.designator_roi_size[0] // 2, HEIGHT), ui_text_clr, 1)
 
         # active tracking / lock
-        if tracker_ret and cursor_control.tracking:
-            x, y, w, h = [int(value) for value in roi]
-            if (CENTRE_X > x and CENTRE_X < x + w and CENTRE_Y > y and CENTRE_Y < y + h and not manual_control.manual):
+        if tracker.tracking:
+            x, y, w, h = [int(value) for value in tracker.bbox]
+            if (frontend.CENTRE_X > x and frontend.CENTRE_X < x + w and frontend.CENTRE_Y > y and frontend.CENTRE_Y < y + h and not manual_control.manual):
                 lock = True
                 lock_size = cv2.getTextSize(
                     "LOCK", FONT, FONT_SCALE, LINE_THICKNESS)[0][0]
-                cv2.rectangle(frame, (WIDTH // 2 - (lock_size // 2), HEIGHT - 38),
-                              (WIDTH // 2 + lock_size - 25, HEIGHT - 20), ui_text_clr, -1)
-                cv2.putText(frame, "LOCK", (WIDTH // 2 - (lock_size // 2),
+                cv2.rectangle(frame, (frontend.WIDTH // 2 - (lock_size // 2), HEIGHT - 38),
+                              (frontend.WIDTH // 2 + lock_size - 25, HEIGHT - 20), ui_text_clr, -1)
+                cv2.putText(frame, "LOCK", (frontend.WIDTH // 2 - (lock_size // 2),
                             HEIGHT - 22), FONT, FONT_SCALE, BLACK, LINE_THICKNESS)
             else:
                 lock = False
                 trk_size = cv2.getTextSize(
                     "TRK", FONT, FONT_SCALE, LINE_THICKNESS)[0][0]
-                cv2.rectangle(frame, (WIDTH // 2 - (trk_size // 2), HEIGHT - 38),
-                              (WIDTH // 2 + trk_size - 20, HEIGHT - 20), ui_text_clr, -1)
-                cv2.putText(frame, "TRK", (WIDTH // 2 - (trk_size // 2),
+                cv2.rectangle(frame, (frontend.WIDTH // 2 - (trk_size // 2), HEIGHT - 38),
+                              (frontend.WIDTH // 2 + trk_size - 20, HEIGHT - 20), ui_text_clr, -1)
+                cv2.putText(frame, "TRK", (frontend.WIDTH // 2 - (trk_size // 2),
                             HEIGHT - 22), FONT, FONT_SCALE, BLACK, LINE_THICKNESS)
 
             cv2.line(frame, (x, y), (x + 20, y),
@@ -299,7 +256,7 @@ while frame_read:
             cv2.line(frame, (x, y + h // 2), (0, y + h // 2), ui_text_clr, 1)
             # right
             cv2.line(frame, (x + w, y + h // 2),
-                     (WIDTH, y + h // 2), ui_text_clr, 1)
+                     (frontend.WIDTH, y + h // 2), ui_text_clr, 1)
             # bottom
             cv2.line(frame, (x + w // 2, y + h),
                      (x + w // 2, HEIGHT), ui_text_clr, 1)
@@ -330,7 +287,3 @@ cv2.destroyAllWindows()
 drone.streamoff()
 drone.end()
 print("[DRONE] - CONNECTION TERMINATED")
-
-if yaw_pid_array:
-    plt.plot(yaw_pid_time, yaw_pid_array)
-    plt.show()

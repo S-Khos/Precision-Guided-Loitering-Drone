@@ -31,3 +31,6 @@ class FrontEnd(object):
 
     def get_feed_centre(self):
         return (FrontEnd.CENTRE_X, FrontEnd.CENTRE_Y)
+
+    def get_designator_frame(self):
+        return self.designator_frame
