@@ -5,22 +5,12 @@ import threading
 import math
 from djitellopy import Tello
 from tracker import Tracker
-from manual_control import ManualControl
+from manual_control import ManualControl, CursorControl
+from frontend import FrontEnd
+from tracker import Tracker
 
 
 class BackEnd(object):
-
-    tracker_thread_lock = threading.Lock()
-    tracker_thread = None
-    tracker_active = False
-    tracker_reset = True
-    tracking = False
-    tracker_roi = None
-    tracker_return = False
-
-    guidance_sys_active = False
-    flt_ctrl_lock = threading.Lock()
-    flight_ctrl_thread = None
 
     YAW_PID = [0.32, 0.05, 0.11]  # 0.32, 0, 0.06
     Y_PID = [1.3, 0.18, 0.1]  # 0.1, 0.3, 0.3,
@@ -30,28 +20,15 @@ class BackEnd(object):
         self.drone = drone
         self.frontend = frontend
         self.fps_init_time = time.time()
-        self.manual_control = None
 
     def process(self, frame, manual_control):
         pass
-
-    def is_tracking(self):
-        return tracking
-
-    def is_tracker_active(self):
-        return tracker_active
-
-    def is_tracker_reset(self):
-        return tracker_reset
-
-    def get_tracker_return(self):
-        return tracker_return
 
     def get_fps(self):
         elapsed_time = time.time() - self.fps_init_time
         fps = 1 / elapsed_time
         self.fps_init_time = time.time()
-        return fps
+        return int(fps)
 
     def get_altitude(self):
         return self.drone.get_distance_tof() / 30.48
