@@ -12,16 +12,16 @@ from tracker import Tracker
 
 class BackEnd(object):
 
-    YAW_PID = [0.32, 0.05, 0.11]  # 0.32, 0, 0.06
-    Y_PID = [1.3, 0.18, 0.1]  # 0.1, 0.3, 0.3,
-    X_PID = [0.2, 0.0, 0.12]
-
-    def __init__(self, drone, frontend):
+    def __init__(self, drone, frontend, guidance_system, tracker, manual_control, cursor_control):
         self.drone = drone
+        self.guidance_system = guidance_system
+        self.tracker = tracker
         self.frontend = frontend
+        self.manual_control = manual_control
+        self.cursor_control = cursor_control
         self.fps_init_time = time.time()
 
-    def process(self, frame, manual_control):
+    def process(self, frame):
         pass
 
     def get_fps(self):
