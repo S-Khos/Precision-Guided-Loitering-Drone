@@ -26,9 +26,9 @@ class BackEnd(object):
 
     def get_fps(self):
         elapsed_time = time.time() - self.fps_init_time
-        fps = 1 / elapsed_time
+        fps = int(1 / elapsed_time)
         self.fps_init_time = time.time()
-        return int(fps)
+        return fps
 
     def get_altitude(self):
         return self.drone.get_distance_tof() / 30.48

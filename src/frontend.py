@@ -118,7 +118,7 @@ class FrontEnd(object):
 
         # active tracking / lock
         if tracker.tracking:
-            x, y, w, h = [int(value) for value in tracker.bbox]
+            x, y, w, h = tracker.get_bbox()
             if (frontend.CENTRE_X > x and frontend.CENTRE_X < x + w and frontend.CENTRE_Y > y and frontend.CENTRE_Y < y + h and not manual_control.manual):
                 lock = True
                 lock_size = cv2.getTextSize(
