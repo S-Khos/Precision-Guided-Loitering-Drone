@@ -74,9 +74,3 @@ class BackEnd(object):
 
     def get_roll(self):
         return int(self.drone.get_roll())
-
-    def in_manual_ctrl(self):
-        return self.manual_control.manual
-
-    def guidance_system_active(self):
-        return guidance_sys_active

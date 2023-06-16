@@ -1,11 +1,7 @@
 from djitellopy import Tello
 import cv2
-import math
 import time
 import threading
-from pynput import keyboard
-from pid import PID
-import matplotlib.pyplot as plt
 from manual_control import KeyControl, CursorControl
 from frontend import FrontEnd
 from tracker import Tracker
@@ -35,7 +31,6 @@ try:
         while frame_read:
 
             frame = frame_read.frame
-            backend.process(frame, manual_control)
             frame, designator_frame = frontend.update(frame)
 
             cv2.imshow("FEED", frame)
@@ -52,7 +47,7 @@ try:
         drone.end()
 
 except Exception as error:
-    print(error)
+    print("[DRONE] - ", error)
     drone.end()
 
 print("[DRONE] - CONNECTION TERMINATED")
