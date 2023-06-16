@@ -43,9 +43,9 @@ class FrontEnd(object):
                     fps_size - 5, 25), frontend.FONT, frontend.FONT_SCALE, frontend.UI_COLOUR, frontend.LINE_THICKNESS)
 
         # top left
-        cv2.putText(self.frame, "PWR   {}%".format(backend.get_battery()),
+        cv2.putText(self.frame, "PWR   {}%".format(self.backend.get_battery()),
                     (5, 25), frontend.FONT, frontend.FONT_SCALE, frontend.UI_COLOUR, frontend.LINE_THICKNESS)
-        cv2.putText(self.frame, "TMP  {} C".format(backend.get_barometer()),
+        cv2.putText(self.frame, "TMP  {} C".format(self.backend.get_barometer()),
                     (5, 55), frontend.FONT, frontend.FONT_SCALE, frontend.UI_COLOUR, frontend.LINE_THICKNESS)
 
         # crosshair
@@ -60,47 +60,47 @@ class FrontEnd(object):
 
         # crosshair stats
         spd_size = cv2.getTextSize(
-            "SPD  {} CM/S".format(backend.get_speed_mag()), frontend.FONT, frontend.FONT_SCALE, frontend.LINE_THICKNESS)[0][0]
-        cv2.putText(self.frame, "SPD  {} CM/S".format(backend.get_speed_mag()), ((frontend.CENTRE_X) - 90 -
-                    spd_size, (frontend.CENTRE_Y) - 100), frontend.FONT, frontend.FONT_SCALE, frontend.frontend.UI_COLOUR, frontend.LINE_THICKNESS)
-        cv2.putText(self.frame, "ALT  {:.1f} FT".format(backend.get_altitude()), ((
+            "SPD  {} CM/S".format(self.backend.get_speed_mag()), frontend.FONT, frontend.FONT_SCALE, frontend.LINE_THICKNESS)[0][0]
+        cv2.putText(self.frame, "SPD  {} CM/S".format(self.backend.get_speed_mag()), ((frontend.CENTRE_X) - 90 -
+                    spd_size, (frontend.CENTRE_Y) - 100), frontend.FONT, frontend.FONT_SCALE, frontend.UI_COLOUR, frontend.LINE_THICKNESS)
+        cv2.putText(self.frame, "ALT  {:.1f} FT".format(self.backend.get_altitude()), ((
             frontend.CENTRE_X) + 90, (frontend.CENTRE_Y) - 100), frontend.FONT, frontend.FONT_SCALE, frontend.UI_COLOUR, frontend.LINE_THICKNESS)
 
         # bottom left telemtry
-        cv2.putText(self.frame, "BRM  {}".format(backend.get_barometer()),
+        cv2.putText(self.frame, "BRM  {}".format(self.backend.get_barometer()),
                     (5, frontend.FRAME_HEIGHT - 100), frontend.FONT, frontend.FONT_SCALE, frontend.UI_COLOUR, frontend.LINE_THICKNESS)
-        cv2.putText(self.frame, "SPD  {}  {}  {}".format(backend.get_speed_x(), backend.get_speed_y(
-        ), backend.get_speed_z()), (5, frontend.FRAME_HEIGHT - 70), frontend.FONT, frontend.FONT_SCALE, frontend.UI_COLOUR, frontend.LINE_THICKNESS)
-        cv2.putText(self.frame, "ACC  {}  {}  {}".format(backend.get_acceleration_x(), backend.get_acceleration_y(
-        ), backend.get_acceleration_z()), (5, frontend.FRAME_HEIGHT - 40), frontend.FONT, frontend.FONT_SCALE, frontend.UI_COLOUR, frontend.LINE_THICKNESS)
-        cv2.putText(self.frame, "YPR  {}  {}  {}".format(backend.get_yaw(), backend.get_pitch(
-        ), backend.get_roll()), (5, frontend.FRAME_HEIGHT - 10), frontend.FONT, frontend.FONT_SCALE, frontend.UI_COLOUR, frontend.LINE_THICKNESS)
+        cv2.putText(self.frame, "SPD  {}  {}  {}".format(self.backend.get_speed_x(), self.backend.get_speed_y(
+        ), self.backend.get_speed_z()), (5, frontend.FRAME_HEIGHT - 70), frontend.FONT, frontend.FONT_SCALE, frontend.UI_COLOUR, frontend.LINE_THICKNESS)
+        cv2.putText(self.frame, "ACC  {}  {}  {}".format(self.backend.get_acceleration_x(), self.backend.get_acceleration_y(
+        ), self.backend.get_acceleration_z()), (5, frontend.FRAME_HEIGHT - 40), frontend.FONT, frontend.FONT_SCALE, frontend.UI_COLOUR, frontend.LINE_THICKNESS)
+        cv2.putText(self.frame, "YPR  {}  {}  {}".format(self.backend.get_yaw(), self.backend.get_pitch(
+        ), self.backend.get_roll()), (5, frontend.FRAME_HEIGHT - 10), frontend.FONT, frontend.FONT_SCALE, frontend.UI_COLOUR, frontend.LINE_THICKNESS)
 
         time_size = cv2.getTextSize(
-            "T + {}".format(backend.get_flight_time()), frontend.FONT, frontend.FONT_SCALE, frontend.LINE_THICKNESS)[0][0]
-        cv2.putText(self.frame, "T + {}".format(backend.get_flight_time()),
+            "T + {}".format(self.backend.get_flight_time()), frontend.FONT, frontend.FONT_SCALE, frontend.LINE_THICKNESS)[0][0]
+        cv2.putText(self.frame, "T + {}".format(self.backend.get_flight_time()),
                     (frontend.FRAME_WIDTH - time_size - 5, 55), frontend.FONT, frontend.FONT_SCALE, frontend.UI_COLOUR, frontend.LINE_THICKNESS)
 
         # bottom compass
         cv2.circle(self.frame, (frontend.FRAME_WIDTH - 60, frontend.FRAME_HEIGHT - 60),
                    50, UI_COLOUR, 1)
-        cv2.arrowedLine(self.frame, (frontend.FRAME_WIDTH - 60, frontend.FRAME_HEIGHT - 60), (int(-50 * math.cos(math.radians(backend.get_yaw() + 90)) +
-                        frontend.FRAME_WIDTH - 60), int((frontend.FRAME_HEIGHT - 60) - (50 * math.sin(math.radians(backend.get_yaw() + 90))))), frontend.UI_COLOUR, 1, tipLength=.15)
+        cv2.arrowedLine(self.frame, (frontend.FRAME_WIDTH - 60, frontend.FRAME_HEIGHT - 60), (int(-50 * math.cos(math.radians(self.backend.get_yaw() + 90)) +
+                        frontend.FRAME_WIDTH - 60), int((frontend.FRAME_HEIGHT - 60) - (50 * math.sin(math.radians(self.backend.get_yaw() + 90))))), frontend.UI_COLOUR, 1, tipLength=.15)
 
         # top center
-        if (manual_control.manual and not backend.flt_ctrl_active):
-            cv2.rectangle(self.frame, (frontend.FRAME_WIDTH//2 - 20, 10),
-                          (frontend.FRAME_WIDTH//2 + 29, 28), frontend.UI_COLOUR, -1)
-            cv2.putText(self.frame, "CTRL", (frontend.FRAME_WIDTH//2 - 20, 25),
+        if (self.manual_control.manual and not self.guidance_system.active):
+            cv2.rectangle(self.frame, (frontend.CENTRE_X - 20, 10),
+                          (frontend.CENTRE_X + 29, 28), frontend.UI_COLOUR, -1)
+            cv2.putText(self.frame, "CTRL", (frontend.CENTRE_X - 20, 25),
                         frontend.FONT, frontend.FONT_SCALE, frontend.BLACK, frontend.LINE_THICKNESS)
         else:
-            cv2.rectangle(self.frame, (frontend.FRAME_WIDTH//2 - 20, 10),
-                          (frontend.FRAME_WIDTH//2 + 31, 28), frontend.UI_COLOUR, -1)
-            cv2.putText(self.frame, "AUTO", (frontend.FRAME_WIDTH//2 - 20, 25),
+            cv2.rectangle(self.frame, (frontend.CENTRE_X - 20, 10),
+                          (frontend.CENTRE_X + 31, 28), frontend.UI_COLOUR, -1)
+            cv2.putText(self.frame, "AUTO", (frontend.CENTRE_X - 20, 25),
                         frontend.FONT, frontend.FONT_SCALE, frontend.BLACK, frontend.LINE_THICKNESS)
 
         # designator cursor
-        if not cursor_control.tracking:
+        if not self.tracker.active:
             cv2.rectangle(self.designator_frame, (cursor_control.cursor_pos[0], cursor_control.cursor_pos[1]), (
                 cursor_control.cursor_pos[0] + manual_control.designator_roi_size[0], cursor_control.cursor_pos[1] + manual_control.designator_roi_size[1]), frontend.UI_COLOUR, 1)
             # top
@@ -117,10 +117,10 @@ class FrontEnd(object):
                      (cursor_control.cursor_pos[0] + manual_control.designator_roi_size[0] // 2, frontend.FRAME_HEIGHT), frontend.UI_COLOUR, 1)
 
         # active tracking / lock
-        if tracker.tracking:
+        if tracker.active:
             x, y, w, h = tracker.get_bbox()
             if (frontend.CENTRE_X > x and frontend.CENTRE_X < x + w and frontend.CENTRE_Y > y and frontend.CENTRE_Y < y + h and not manual_control.manual):
-                lock = True
+                self.guidance_system.lock = True
                 lock_size = cv2.getTextSize(
                     "LOCK", frontend.FONT, frontend.FONT_SCALE, frontend.LINE_THICKNESS)[0][0]
                 cv2.rectangle(self.frame, (frontend.CENTRE_X - (lock_size // 2), frontend.FRAME_HEIGHT - 38),
@@ -128,7 +128,7 @@ class FrontEnd(object):
                 cv2.putText(self.frame, "LOCK", (frontend.CENTRE_X - (lock_size // 2),
                             frontend.FRAME_HEIGHT - 22), frontend.FONT, frontend.FONT_SCALE, frontend.BLACK, frontend.LINE_THICKNESS)
             else:
-                lock = False
+                self.guidance_system.lock = False
                 trk_size = cv2.getTextSize(
                     "TRK", frontend.FONT, frontend.FONT_SCALE, frontend.LINE_THICKNESS)[0][0]
                 cv2.rectangle(self.frame, (frontend.CENTRE_X - (trk_size // 2), frontend.FRAME_HEIGHT - 38),

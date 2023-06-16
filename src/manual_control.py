@@ -71,11 +71,10 @@ class KeyControl(object):
 
 class CursorControl(object):
     def __init__(self, key_control, frontend, tracker):
-        # add backend for empty frame
         self.key_control = key_control
         self.frontend = frontend
         self.tracker = tracker
-        self.cursor_pos = [frontend.CENTRE_X, frontend.CENTRE_Y]
+        self.cursor_pos = [self.frontend.CENTRE_X, self.frontend.CENTRE_Y]
 
     def event_handler(self, event, x, y, flags, param):
         self.cursor_pos[0] = int(
@@ -83,8 +82,8 @@ class CursorControl(object):
         self.cursor_pos[1] = int(
             y - self.key_control.designator_roi_size[1] / 2)
         if event == cv2.EVENT_LBUTTONDOWN:
-            if not self.tracker.tracking and self.tracker.reset_tracker:
+            if not self.tracker.active and self.tracker.reset:
                 self.tracker.init_tracker()
             else:
-                self.tracker.reset_tracker = True
-                self.tracker.tracking = False
+                self.tracker.reset = True
+                self.tracker.active = False

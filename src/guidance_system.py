@@ -2,6 +2,7 @@ from djitellopy import Tello
 import cv2
 import math
 import time
+from pid import PID
 
 
 class GuidanceSystem(object):
@@ -16,14 +17,16 @@ class GuidanceSystem(object):
         self.tracker = tracker
         self.frontend = frontend
         self.backend = backend
-        self.guidance_sys_active = False
-        self.guidance_sys_thread = None
+        self.active = False
+        self.thread = None
+        self.lock = False
 
-        if not self.guidance_sys_active and not self.manual_control.manual:
-            self.guidance_sys_thread = threading.Thread(
-                target=self.process(), daemon=True)
-            self.guidance_sys_thread.start()
-            self.guidance_sys_active = True
+    def init_guidance_system(self):
+        if not self.active and not self.manual_control.manual:
+            self.thread = threading.Thread(
+                target=self.process, daemon=True)
+            self.thread.start()
+            self.active = True
 
     def process(self):
         try:
@@ -54,7 +57,7 @@ class GuidanceSystem(object):
             yaw_pid.reset()
             y_pid.reset()
             x_pid.reset()
-            self.guidance_sys_active = False
+            self.active = False
             drone.send_rc_control(0, 0, 0, 0)
             print("[FLT CTRL] - TERMINATED")
 
@@ -62,7 +65,7 @@ class GuidanceSystem(object):
             yaw_pid.reset()
             y_pid.reset()
             x_pid.reset()
-            self.guidance_sys_active = False
+            self.active = False
             self.manual_control.flip_manual()
             drone.send_rc_control(0, 0, 0, 0)
-            print("[FLT CTRL] - Error occured\n", error)
+            print("[FLT CTRL] - ", error)
