@@ -5,15 +5,14 @@ import threading
 from manual_control import KeyControl, CursorControl
 from frontend import FrontEnd
 from tracker import Tracker
-from backend import Backend
+from backend import BackEnd
+from guidance_system import GuidanceSystem
+
+# connect class properly, have backend create objects of everything else
 
 drone = Tello()
-manual_control = KeyControl(drone)
-cursor_control = CursorControl(manual_control, frontend)
-tracker = Tracker(cursor_control, manual_control, frontend)
-frontend = FrontEnd(backend, manual_control, cursor_control, tracker)
-backend = BackEnd(drone, frontend, guidance_system, tracker,
-                  manual_control, cursor_control)
+
+backend = BackEnd(drone)
 
 try:
     drone.connect()
@@ -32,6 +31,9 @@ try:
 
             frame = frame_read.frame
             frame, designator_frame = frontend.update(frame)
+            # frontend_thread = threading.Thread(
+            #     target=frontend.update, args=(frame), daemon=True)
+            # frontend_thread.start()
 
             cv2.imshow("FEED", frame)
             cv2.imshow("DESIGNATOR", designator_frame)

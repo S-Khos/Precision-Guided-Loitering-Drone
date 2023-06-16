@@ -4,6 +4,8 @@ import time
 import threading
 import math
 
+# implement guidance system init once in auto
+
 
 class FrontEnd(object):
 
@@ -23,7 +25,7 @@ class FrontEnd(object):
 
     def __init__(self, backend, manual_control, cursor_control, tracker, guidance_system):
         self.backend = backend
-        self.manual_control = keyboard_control
+        self.manual_control = manual_control
         self.tracker = tracker
         self.cursor_control = cursor_control
         self.guidance_system = guidance_system
@@ -169,7 +171,7 @@ class FrontEnd(object):
             cv2.line(self.frame, (x + w // 2, y + h),
                      (x + w // 2, frontend.FRAME_HEIGHT), frontend.UI_COLOUR, 1)
 
-        return (self.frame, self.designator_frame)
+            return (self.frame, self.designator_frame)
 
     def get_frame_size(self):
         return (FrontEnd.FRAME_WIDTH, FrontEnd.FRAME_HEIGHT)

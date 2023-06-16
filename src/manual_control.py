@@ -70,11 +70,10 @@ class KeyControl(object):
 
 
 class CursorControl(object):
-    def __init__(self, key_control, frontend, tracker):
+    def __init__(self, key_control, tracker):
         self.key_control = key_control
-        self.frontend = frontend
         self.tracker = tracker
-        self.cursor_pos = [self.frontend.CENTRE_X, self.frontend.CENTRE_Y]
+        self.cursor_pos = [self.CENTRE_X, self.CENTRE_Y]
 
     def event_handler(self, event, x, y, flags, param):
         self.cursor_pos[0] = int(
