@@ -16,7 +16,7 @@ manual_control = KeyControl(drone)
 cursor_control = CursorControl(manual_control, frontend)
 tracker = Tracker(cursor_control, manual_control, frontend)
 frontend = FrontEnd(backend, manual_control, cursor_control, tracker)
-backend = Backend(drone, frontend, guidance_system, tracker,
+backend = BackEnd(drone, frontend, guidance_system, tracker,
                   manual_control, cursor_control)
 
 try:

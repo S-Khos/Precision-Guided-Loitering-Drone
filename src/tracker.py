@@ -15,12 +15,12 @@ class Tracker(object):
         self.tracker_thread = None
         self.designator_frame = None
         self.bbox = None
+        self.thread_lock = threading.Lock()
 
-    def init_tracker(self, designator_frame):
-        self.designator_frame = designator_frame
+    def init_tracker(self):
+        self.designator_frame = self.frontend.get_designator_frame()
         self.tracking = True
         self.reset_tracker = False
-        self.thread_lock = threading.Lock()
         self.tracker = cv2.legacy.TrackerCSRT_create()
         self.tracker.init(
             self.designator_frame, (self.cursor_control.cursor_pos[0], self.cursor_control.cursor_pos[1], self.key_control.designator_roi_size[0], self.key_control.designator_roi_size[1]))

@@ -84,7 +84,7 @@ class CursorControl(object):
             y - self.key_control.designator_roi_size[1] / 2)
         if event == cv2.EVENT_LBUTTONDOWN:
             if not self.tracker.tracking and self.tracker.reset_tracker:
-                self.tracker.init_tracker(self.frontend.get_designator_frame())
+                self.tracker.init_tracker()
             else:
                 self.tracker.reset_tracker = True
                 self.tracker.tracking = False
