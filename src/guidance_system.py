@@ -3,23 +3,17 @@ import cv2
 import math
 import time
 from pid import PID
+from backend import BackEnd
 
 
-class GuidanceSystem(object):
+class GuidanceSystem(BackEnd):
 
     YAW_PID = [0.32, 0.05, 0.11]  # 0.32, 0, 0.06
     Y_PID = [1.3, 0.18, 0.1]  # 0.1, 0.3, 0.3,
     X_PID = [0.2, 0.0, 0.12]
 
-    def __init__(self, drone, manual_control, tracker, frontend, backend):
-        self.drone = drone
-        self.manual_control = manual_control
-        self.tracker = tracker
-        self.frontend = frontend
-        self.backend = backend
-        self.active = False
-        self.thread = None
-        self.lock = False
+    def __init__(self):
+        super().__init__()
 
     def init_guidance_system(self):
         if not self.active and not self.manual_control.manual:

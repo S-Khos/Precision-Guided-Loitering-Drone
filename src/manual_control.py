@@ -2,16 +2,12 @@ from djitellopy import Tello
 from pynput import keyboard
 import threading
 import cv2
+from backend import BackEnd
 
 
-class KeyControl(object):
-    def __init__(self, drone):
-        self.drone = drone
-        self.dive = False
-        self.manual = True
-        self.default_dist = 30
-        self.designator_delta = 30
-        self.designator_roi_size = [100, 100]
+class KeyControl(BackEnd):
+    def __init__(self):
+        super().__init__()
 
         self.key_listener = keyboard.Listener(
             on_press=self.on_key_press, on_release=self.on_key_release, daemon=True)
@@ -69,11 +65,9 @@ class KeyControl(object):
             print("[Manual Control] - Invalid key.")
 
 
-class CursorControl(object):
-    def __init__(self, key_control, tracker):
-        self.key_control = key_control
-        self.tracker = tracker
-        self.cursor_pos = [self.CENTRE_X, self.CENTRE_Y]
+class CursorControl(BackEnd):
+    def __init__(self):
+        super().__init__()
 
     def event_handler(self, event, x, y, flags, param):
         self.cursor_pos[0] = int(

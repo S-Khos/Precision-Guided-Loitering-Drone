@@ -4,17 +4,34 @@ import time
 import threading
 import math
 from djitellopy import Tello
+from frontend import FrontEnd
 
 
-class BackEnd(object):
+class BackEnd(FrontEnd):
 
-    def __init__(self, drone, frontend, guidance_system, tracker, manual_control, cursor_control):
+    def __init__(self, drone):
+        super().__init__()
         self.drone = drone
-        self.guidance_system = guidance_system
-        self.tracker = tracker
-        self.frontend = frontend
-        self.manual_control = manual_control
-        self.cursor_control = cursor_control
+        self.GS_active = False
+        self.GS_thread = None
+        self.GS_lock = False
+
+        self.TR_active = False
+        self.TR_reset = True
+        self.TR_tracker = None
+        self.TR_thread = None
+        self.TR_designator_frame = None
+        self.TR_bbox = None
+        self.TR_thread_lock = threading.Lock()
+
+        self.KC_dive = False
+        self.KC_manual = True
+        self.KC_default_dist = 30
+        self.KC_designator_delta = 30
+        self.KC_designator_roi_size = [100, 100]
+
+        self.CC_cursor_pos = [self.CENTRE_X, self.CENTRE_Y]
+
         self.fps_init_time = time.time()
 
     def process(self, frame):
@@ -70,3 +87,6 @@ class BackEnd(object):
 
     def get_roll(self):
         return int(self.drone.get_roll())
+
+    def in_manual_control(self):
+        return (self.KC_manual and not self.GS_active)

@@ -2,20 +2,12 @@ import cv2
 import time
 import math
 import threading
+from backend import BackEnd
 
 
-class Tracker(object):
-    def __init__(self, cursor_control, key_control, frontend):
-        self.cursor_control = cursor_control
-        self.key_control = key_control
-        self.frontend = frontend
-        self.active = False
-        self.reset = True
-        self.tracker = None
-        self.thread = None
-        self.designator_frame = None
-        self.bbox = None
-        self.thread_lock = threading.Lock()
+class Tracker(BackEnd):
+    def __init__(self):
+        super().__init__()
 
     def init_tracker(self):
         self.designator_frame = self.frontend.get_designator_frame()

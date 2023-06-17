@@ -2,17 +2,12 @@ from djitellopy import Tello
 import cv2
 import time
 import threading
-from manual_control import KeyControl, CursorControl
-from frontend import FrontEnd
-from tracker import Tracker
-from backend import BackEnd
-from guidance_system import GuidanceSystem
 
 # connect class properly, have backend create objects of everything else
 
 drone = Tello()
 
-backend = BackEnd(drone)
+frontend = FrontEnd(drone)
 
 try:
     drone.connect()
