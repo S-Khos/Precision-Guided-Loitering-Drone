@@ -2,7 +2,7 @@ from djitellopy import Tello
 import cv2
 import time
 import threading
-
+from frontend import FrontEnd
 # connect class properly, have backend create objects of everything else
 
 drone = Tello()
