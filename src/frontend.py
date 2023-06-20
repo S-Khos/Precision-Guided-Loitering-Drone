@@ -3,13 +3,19 @@ import numpy as np
 import time
 import threading
 import math
+from backend import BackEnd
+from cursor_control import CursorControl
+from key_control import KeyControl
+from tracker import Tracker
+from guidance_system import GuidanceSystem
+
 
 # implement guidance system init once in auto
 
 
 class FrontEnd(object):
 
-    def __init__(self):
+    def __init__(self, drone):
         self.frame = None
         self.designator_frame = None
         self.FRAME_WIDTH = 960
@@ -25,6 +31,11 @@ class FrontEnd(object):
         self.BLACK = (0, 0, 0)
         self.UI_COLOUR = WHITE
         self.LINE_THICKNESS = 1
+        self.backend = BackEnd(drone)
+        self.key_control = KeyControl(self.backend)
+        self.tracker = Tracker(self.backend)
+        self.cursor_control = CursorControl(self.backend)
+        self.guidance_system = GuidanceSystem(self.backend)
 
     def update(self, frame):
         self.frame = frame
@@ -172,9 +183,3 @@ class FrontEnd(object):
 
     def get_frame_centre(self):
         return (self.CENTRE_X, self.CENTRE_Y)
-
-    def get_designator_frame(self):
-        return self.designator_frame
-
-    def get_frame(self):
-        return self.frame

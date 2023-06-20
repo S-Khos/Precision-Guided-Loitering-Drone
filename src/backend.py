@@ -4,17 +4,22 @@ import time
 import threading
 import math
 from djitellopy import Tello
+from cursor_control import CursorControl
+from key_control import KeyControl
+from tracker import Tracker
+from guidance_system import GuidanceSystem
 from frontend import FrontEnd
 
 
 class BackEnd(FrontEnd):
 
     def __init__(self, drone):
-        super().__init__()
         self.drone = drone
-        self.GS_active = False
-        self.GS_thread = None
-        self.GS_lock = False
+
+        self.KC_manual = True
+        self.KC_default_dist = 30
+        self.KC_designator_delta = 30
+        self.KC_designator_roi_size = [100, 100]
 
         self.TR_active = False
         self.TR_reset = True
@@ -24,18 +29,19 @@ class BackEnd(FrontEnd):
         self.TR_bbox = None
         self.TR_thread_lock = threading.Lock()
 
-        self.KC_dive = False
-        self.KC_manual = True
-        self.KC_default_dist = 30
-        self.KC_designator_delta = 30
-        self.KC_designator_roi_size = [100, 100]
+        self.GS_active = False
+        self.GS_thread = None
+        self.GS_lock = False
+        self.GS_dive = False
 
         self.CC_cursor_pos = [self.CENTRE_X, self.CENTRE_Y]
 
         self.fps_init_time = time.time()
 
     def process(self, frame):
-        pass
+        # initate tracker thread
+        if self.tracker.active and self.tracker.reset:
+            self.tracker.init_tracker()
 
     def get_fps(self):
         elapsed_time = time.time() - self.fps_init_time

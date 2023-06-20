@@ -3,37 +3,35 @@ import cv2
 import math
 import time
 from pid import PID
-from backend import BackEnd
-from frontend import FrontEnd
 
 
-class GuidanceSystem(BackEnd, FrontEnd):
-    def __init__(self):
-        super().__init__()
+class GuidanceSystem(object):
+    def __init__(self, backend):
+        self.backend = backend
         self.YAW_PID = [0.32, 0.05, 0.11]  # 0.32, 0, 0.06
         self.Y_PID = [1.3, 0.18, 0.1]  # 0.1, 0.3, 0.3,
         self.X_PID = [0.2, 0.0, 0.12]
 
     def init_guidance_system(self):
-        if not self.GS_active and not self.KC_manual:
-            self.GS_thread = threading.Thread(
+        if not self.backend.GS_active and not self.backend.KC_manual:
+            self.backend.GS_thread = threading.Thread(
                 target=self.process, daemon=True)
-            self.GS_thread.start()
-            self.GS_active = True
+            self.backend.GS_thread.start()
+            self.backend.GS_active = True
 
     def process(self):
         try:
             print("[FLT CTRL] - ACTIVE")
 
             yaw_pid = PID(self.YAW_PID[0], self.YAW_PID[1], self.YAW_PID[2],
-                          self.CENTRE_X, -100, 100)
+                          self.backend.CENTRE_X, -100, 100)
             x_pid = PID(self.X_PID[0], self.X_PID[1], self.X_PID[2],
-                        self.CENTRE_X, -80, 80)
+                        self.backend.CENTRE_X, -80, 80)
             y_pid = PID(self.Y_PID[0], self.Y_PID[1], self.Y_PID[2],
-                        self.CENTRE_Y, -100, 100)
+                        self.backend.CENTRE_Y, -100, 100)
 
-            while self.TR_active and not self.KC_manual:
-                x, y, w, h = self.get_bbox()
+            while self.backend.TR_active and not self.backend.KC_manual:
+                x, y, w, h = self.backend.TR_bbox
                 targetX = int(x + w / 2)
                 targetY = int(y + h / 2)
 
@@ -43,14 +41,14 @@ class GuidanceSystem(BackEnd, FrontEnd):
 
                 if drone.send_rc_control:
                     drone.send_rc_control(-x_velocity if abs(x_velocity)
-                                          > 60 else 0, 90 if altitude > 1 and self.manual_control.dive else 0, y_velocity, -yaw_velocity)
+                                          > 60 else 0, 90 if altitude > 1 and self.backend.GS_dive else 0, y_velocity, -yaw_velocity)
 
                 time.sleep(0.1)
 
             yaw_pid.reset()
             y_pid.reset()
             x_pid.reset()
-            self.GS_active = False
+            self.backend.GS_active = False
             drone.send_rc_control(0, 0, 0, 0)
             print("[FLT CTRL] - TERMINATED")
 
@@ -58,7 +56,7 @@ class GuidanceSystem(BackEnd, FrontEnd):
             yaw_pid.reset()
             y_pid.reset()
             x_pid.reset()
-            self.GS_active = False
-            self.flip_manual()
+            self.backend.GS_active = False
+            self.backend.KC_manual = not self.backend.KC_manual
             drone.send_rc_control(0, 0, 0, 0)
             print("[FLT CTRL] - ", error)

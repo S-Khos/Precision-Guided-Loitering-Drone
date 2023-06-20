@@ -20,7 +20,8 @@ try:
                        int((1080 // 2) - frontend.CENTRE_Y))
         cv2.moveWindow("DESIGNATOR", int((1920 // 4) + frontend.CENTRE_X + 10),
                        int((1080 // 2) - frontend.CENTRE_Y))
-        cv2.setMouseCallback("DESIGNATOR", cursor_control.event_handler)
+        cv2.setMouseCallback(
+            "DESIGNATOR", frontend.cursor_control.event_handler)
 
         while frame_read:
 

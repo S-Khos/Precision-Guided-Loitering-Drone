@@ -1,21 +1,18 @@
-from backend import BackEnd
-from tracker import Tracker
 import cv2
 
 
-class CursorControl(BackEnd, Tracker):
-    def __init__(self):
-        super().__init__()
+class CursorControl(object):
+    def __init__(self, backend):
+        self.backend = backend
 
     def event_handler(self, event, x, y, flags, param):
-        self.CC_cursor_pos[0] = int(
-            x - self.KC_designator_roi_size[0] / 2)
-        self.CC_cursor_pos[1] = int(
-            y - self.KC_designator_roi_size[1] / 2)
+        self.backend.CC_cursor_pos[0] = int(
+            x - self.backend.KC_designator_roi_size[0] / 2)
+        self.backend.CC_cursor_pos[1] = int(
+            y - self.backend.KC_designator_roi_size[1] / 2)
         if event == cv2.EVENT_LBUTTONDOWN:
-            # ------------- put this in backend or tracker, check for tr reset and tr active -----------------
-            if not self.TR_active and self.TR_reset:
-                self.init_tracker()
+            if not self.backend.TR_active and self.backend.TR_reset:
+                self.backend.TR_active = True
             else:
-                self.TR_reset = True
-                self.TR_active = False
+                self.backend.TR_reset = True
+                self.backend.TR_active = False
