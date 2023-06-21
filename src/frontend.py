@@ -3,39 +3,14 @@ import numpy as np
 import time
 import threading
 import math
-from backend import BackEnd
-from cursor_control import CursorControl
-from key_control import KeyControl
-from tracker import Tracker
-from guidance_system import GuidanceSystem
-
-
-# implement guidance system init once in auto
 
 
 class FrontEnd(object):
 
-    def __init__(self, drone):
+    def __init__(self, state):
         self.frame = None
         self.designator_frame = None
-        self.FRAME_WIDTH = 960
-        self.FRAME_HEIGHT = 720
-        self.CENTRE_X = int(FRAME_WIDTH / 2)
-        self.CENTRE_Y = int(FRAME_HEIGHT / 2)
-        self.FONT = cv2.FONT_HERSHEY_COMPLEX
-        self.FONT_SCALE = .6
-        self.RED = (0, 0, 255)
-        self.GREEN = (0, 255, 0)
-        self.BLUE = (255, 0, 0)
-        self.WHITE = (255, 255, 255)
-        self.BLACK = (0, 0, 0)
-        self.UI_COLOUR = WHITE
-        self.LINE_THICKNESS = 1
-        self.backend = BackEnd(drone)
-        self.key_control = KeyControl(self.backend)
-        self.tracker = Tracker(self.backend)
-        self.cursor_control = CursorControl(self.backend)
-        self.guidance_system = GuidanceSystem(self.backend)
+        self.state = state
 
     def update(self, frame):
         self.frame = frame
@@ -106,8 +81,11 @@ class FrontEnd(object):
             cv2.putText(self.frame, "AUTO", (self.CENTRE_X - 20, 25),
                         self.FONT, self.FONT_SCALE, self.BLACK, self.LINE_THICKNESS)
 
+            # move this later into a proper place -----------------
+            self.guidance_system.init_guidance_system()
+
         # designator cursor
-        if not self.tracker.active:
+        if not self.state.TR_active:
             cv2.rectangle(self.designator_frame, (cursor_control.cursor_pos[0], cursor_control.cursor_pos[1]), (
                 cursor_control.cursor_pos[0] + manual_control.designator_roi_size[0], cursor_control.cursor_pos[1] + manual_control.designator_roi_size[1]), self.UI_COLOUR, 1)
             # top

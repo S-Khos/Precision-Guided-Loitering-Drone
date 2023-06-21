@@ -6,14 +6,14 @@ from pid import PID
 
 
 class GuidanceSystem(object):
-    def __init__(self, backend):
-        self.backend = backend
+    def __init__(self, state):
+        self.state = state
         self.YAW_PID = [0.32, 0.05, 0.11]  # 0.32, 0, 0.06
         self.Y_PID = [1.3, 0.18, 0.1]  # 0.1, 0.3, 0.3,
         self.X_PID = [0.2, 0.0, 0.12]
 
     def init_guidance_system(self):
-        if not self.backend.GS_active and not self.backend.KC_manual:
+        if not self.backend.in_manual_control():
             self.backend.GS_thread = threading.Thread(
                 target=self.process, daemon=True)
             self.backend.GS_thread.start()

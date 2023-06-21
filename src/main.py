@@ -2,12 +2,14 @@ from djitellopy import Tello
 import cv2
 import time
 import threading
+from state import State
 from frontend import FrontEnd
-# connect class properly, have backend create objects of everything else
+from backend import BackEnd
 
 drone = Tello()
-
-frontend = FrontEnd(drone)
+state = State(drone)
+frontend = FrontEnd(state)
+backend = BackEnd(state)
 
 try:
     drone.connect()

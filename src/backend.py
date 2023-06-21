@@ -8,40 +8,22 @@ from cursor_control import CursorControl
 from key_control import KeyControl
 from tracker import Tracker
 from guidance_system import GuidanceSystem
-from frontend import FrontEnd
 
 
-class BackEnd(FrontEnd):
+class BackEnd(object):
 
-    def __init__(self, drone):
-        self.drone = drone
-
-        self.KC_manual = True
-        self.KC_default_dist = 30
-        self.KC_designator_delta = 30
-        self.KC_designator_roi_size = [100, 100]
-
-        self.TR_active = False
-        self.TR_reset = True
-        self.TR_tracker = None
-        self.TR_thread = None
-        self.TR_designator_frame = None
-        self.TR_bbox = None
-        self.TR_thread_lock = threading.Lock()
-
-        self.GS_active = False
-        self.GS_thread = None
-        self.GS_lock = False
-        self.GS_dive = False
-
-        self.CC_cursor_pos = [self.CENTRE_X, self.CENTRE_Y]
+    def __init__(self, state):
+        self.state = state
+        self.key_control = KeyControl(self.state)
+        self.tracker = Tracker(self.state)
+        self.cursor_control = CursorControl(self.state, self.tracker)
+        self.guidance_system = GuidanceSystem(self.state)
 
         self.fps_init_time = time.time()
 
-    def process(self, frame):
-        # initate tracker thread
-        if self.tracker.active and self.tracker.reset:
-            self.tracker.init_tracker()
+    def update(self):
+        # init tracking
+        pass
 
     def get_fps(self):
         elapsed_time = time.time() - self.fps_init_time
@@ -95,4 +77,4 @@ class BackEnd(FrontEnd):
         return int(self.drone.get_roll())
 
     def in_manual_control(self):
-        return (self.KC_manual and not self.GS_active)
+        return (self.state.KC_manual and not self.state.GS_active)
