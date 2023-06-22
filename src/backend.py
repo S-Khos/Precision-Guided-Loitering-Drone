@@ -9,6 +9,8 @@ from key_control import KeyControl
 from tracker import Tracker
 from guidance_system import GuidanceSystem
 
+# get rid of getters
+
 
 class BackEnd(object):
 
@@ -16,20 +18,13 @@ class BackEnd(object):
         self.state = state
         self.key_control = KeyControl(self.state)
         self.tracker = Tracker(self.state)
-        self.cursor_control = CursorControl(self.state, self.tracker)
+        self.cursor_control = CursorControl(self.state)
         self.guidance_system = GuidanceSystem(self.state)
 
-        self.fps_init_time = time.time()
-
     def update(self):
-        # init tracking
-        pass
-
-    def get_fps(self):
-        elapsed_time = time.time() - self.fps_init_time
-        fps = int(1 / elapsed_time)
-        self.fps_init_time = time.time()
-        return fps
+        # init tracking, needs to be checked after cursor click
+        if self.state.TR_active and self.state.TR_reset:
+            self.tracker.init_tracker()
 
     def get_altitude(self):
         return self.drone.get_distance_tof() / 30.48

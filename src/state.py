@@ -2,6 +2,9 @@ class State(object):
     def __init__(self, drone):
         self.drone = drone
 
+        self.frame = None
+        self.designator_frame = None
+
         self.FRAME_WIDTH = 960
         self.FRAME_HEIGHT = 720
         self.CENTRE_X = int(FRAME_WIDTH / 2)

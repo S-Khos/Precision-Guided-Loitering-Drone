@@ -4,21 +4,23 @@ import time
 import threading
 import math
 
+# 1. replace getters with state.drone calls instead
+
 
 class FrontEnd(object):
 
     def __init__(self, state):
-        self.frame = None
-        self.designator_frame = None
         self.state = state
+        self.fps_init_time = time.time()
 
-    def update(self, frame):
-        self.frame = frame
-        self.frame = cv2.cvtColor(self.frame, cv2.COLOR_BGR2RGB)
-        self.designator_frame = self.frame.copy()
+    def update(self):
+        self.state.frame = cv2.cvtColor(self.state.frame, cv2.COLOR_BGR2RGB)
+        self.state.designator_frame = self.state.frame.copy()
 
         # fps
-        fps = self.backend.get_fps()
+        elapsed_time = time.time() - self.fps_init_time
+        fps = int(1 / elapsed_time)
+        fps_init_time = time.time()
         fps_size = cv2.getTextSize("FPS  {}".format(
             fps), self.FONT, self.FONT_SCALE, self.LINE_THICKNESS)[0][0]
         cv2.putText(self.frame, "FPS  {}".format(fps), (self.FRAME_WIDTH -
@@ -153,11 +155,3 @@ class FrontEnd(object):
             # bottom
             cv2.line(self.frame, (x + w // 2, y + h),
                      (x + w // 2, self.FRAME_HEIGHT), self.UI_COLOUR, 1)
-
-            return (self.frame, self.designator_frame)
-
-    def get_frame_size(self):
-        return (self.FRAME_WIDTH, self.FRAME_HEIGHT)
-
-    def get_frame_centre(self):
-        return (self.CENTRE_X, self.CENTRE_Y)

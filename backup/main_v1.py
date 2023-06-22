@@ -336,7 +336,6 @@ while frame_read:
 
     except Exception as error:
         print("[FEED] - Display error\n", error)
-        ManualControl.terminate()
         drone.streamoff()
         drone.end()
         break
@@ -344,7 +343,7 @@ while frame_read:
     start_time = time.time()
     if (cv2.waitKey(1) & 0xff) == 27:
         break
-ManualControl.terminate()
+
 cv2.destroyAllWindows()
 drone.streamoff()
 drone.end()
