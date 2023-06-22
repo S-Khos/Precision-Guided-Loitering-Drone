@@ -27,7 +27,7 @@ class GuidanceSystem(object):
                         self.state.CENTRE_Y, -100, 100)
 
             while self.state.TR_active and not self.state.KC_manual:
-                x, y, w, h = self.state.TR_bbox[0], self.state.TR_bbox[1], self.state.TR_bbox[2], self.state.TR_bbox[3]
+                x, y, w, h = [int(value) for value in self.state.TR_bbox]
                 targetX = int(x + w / 2)
                 targetY = int(y + h / 2)
 

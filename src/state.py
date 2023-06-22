@@ -33,7 +33,7 @@ class State(object):
         self.TR_tracker = None
         self.TR_thread = None
         self.TR_designator_frame = None
-        self.TR_bbox = None
+        self.TR_bbox = []
         self.TR_thread_lock = threading.Lock()
 
         self.GS_active = False
@@ -63,7 +63,7 @@ class State(object):
         self.battery = int(self.drone.get_battery())
         self.temperature = int(self.drone.get_temperature())
         self.flight_time = int(self.drone.get_flight_time())
-        self.barometer = int(self.drone.get_barometer())
+        self.barometer = int(self.drone.get_barometer() / 30.48)
         self.acceleration_x = int(self.drone.get_acceleration_x())
         self.acceleration_y = int(self.drone.get_acceleration_y())
         self.acceleration_z = int(self.drone.get_acceleration_z())
