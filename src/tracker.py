@@ -38,6 +38,3 @@ class Tracker(object):
 
         drone.send_rc_control(0, 0, 0, 0)
         print("[TRACK] - TRACKING TERMINATED")
-
-    def get_bbox(self):
-        return (self.state.TR_bbox[0], self.state.TR_bbox[1], self.state.TR_bbox[2], self.state.TR_bbox[3])

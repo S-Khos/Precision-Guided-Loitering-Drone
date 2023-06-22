@@ -1,7 +1,5 @@
 import cv2
 
-# ----- fix if statement, move tracker init to backend update instead and remove the need for tracker
-
 
 class CursorControl(object):
     def __init__(self, state):
