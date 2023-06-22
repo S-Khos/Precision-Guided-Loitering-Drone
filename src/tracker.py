@@ -1,6 +1,5 @@
 import cv2
 import time
-import math
 import threading
 
 
@@ -23,8 +22,8 @@ class Tracker(object):
         try:
             while self.state.TR_active:
                 tracker_ret, self.state.TR_bbox = self.state.TR_tracker.update(
-                    self.state.get_designator_frame())
-                if not tracker_ret or self.state.TR_reset:
+                    self.state.designator_frame)
+                if not tracker_ret:
                     self.state.TR_thread_lock.acquire()
                     self.state.TR_active = False
                     self.state.TR_reset = True

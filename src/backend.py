@@ -9,20 +9,19 @@ from key_control import KeyControl
 from tracker import Tracker
 from guidance_system import GuidanceSystem
 
-# get rid of getters
-
 
 class BackEnd(object):
 
     def __init__(self, state):
         self.state = state
         self.key_control = KeyControl(self.state)
-        self.tracker = Tracker(self.state)
         self.cursor_control = CursorControl(self.state)
+        self.tracker = Tracker(self.state)
         self.guidance_system = GuidanceSystem(self.state)
 
     def update(self):
         # init tracking, needs to be checked after cursor click
+
         if self.state.TR_active and self.state.TR_reset:
             self.tracker.init_tracker()
 

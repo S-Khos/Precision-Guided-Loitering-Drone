@@ -40,14 +40,3 @@ class PID(object):
                 self.output = self.MIN_SPD
 
         return (self.output, self.cur_time)
-
-    def reset(self):
-        self.error = 0
-        self.prev_error = 0
-        self.integral = 0
-        self.derivative = 0
-        self.proportional = 0
-        self.output = 0
-        self.cur_time = None
-        self.prev_time = None
-        self.time_diff = 0

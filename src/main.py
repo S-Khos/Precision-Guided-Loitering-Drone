@@ -26,11 +26,13 @@ def main():
             cv2.moveWindow("DESIGNATOR", int((1920 // 4) + frontend.CENTRE_X + 10),
                            int((1080 // 2) - frontend.CENTRE_Y))
             cv2.setMouseCallback(
-                "DESIGNATOR", frontend.cursor_control.event_handler)
+                "DESIGNATOR", backend.cursor_control.event_handler)
 
             while frame_read:
                 state.frame = frame_read.frame
-                frontend.update(state.frame)
+                state.update()
+                backend.update()
+                frontend.update()
 
                 cv2.imshow("FEED", state.frame)
                 cv2.imshow("DESIGNATOR", state.designator_frame)

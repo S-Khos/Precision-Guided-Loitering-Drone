@@ -7,8 +7,8 @@ class State(object):
 
         self.FRAME_WIDTH = 960
         self.FRAME_HEIGHT = 720
-        self.CENTRE_X = int(FRAME_WIDTH / 2)
-        self.CENTRE_Y = int(FRAME_HEIGHT / 2)
+        self.CENTRE_X = int(self.FRAME_WIDTH / 2)
+        self.CENTRE_Y = int(self.FRAME_HEIGHT / 2)
         self.FONT = cv2.FONT_HERSHEY_COMPLEX
         self.FONT_SCALE = .6
         self.RED = (0, 0, 255)
@@ -38,3 +38,34 @@ class State(object):
         self.GS_dive = False
 
         self.CC_cursor_pos = [self.CENTRE_X, self.CENTRE_Y]
+
+        self.altitude = self.drone.get_distance_tof() / 30.48
+        self.battery = int(self.drone.get_battery())
+        self.temperature = int(self.drone.get_temperature())
+        self.flight_time = int(self.drone.get_flight_time())
+        self.barometer = int(self.drone.get_barometer())
+        self.acceleration_x = int(self.drone.get_acceleration_x())
+        self.acceleration_y = int(self.drone.get_acceleration_y())
+        self.acceleration_z = int(self.drone.get_acceleration_z())
+        self.x_speed = abs(int(self.drone.get_speed_x()))
+        self.y_speed = abs(int(self.drone.get_speed_y()))
+        self.z_speed = abs(int(self.drone.get_speed_z()))
+        self.yaw = int(self.drone.get_yaw())
+        self.pitch = int(self.drone.get_pitch())
+        self.roll = int(self.drone.get_roll())
+
+    def update(self):
+        self.altitude = self.drone.get_distance_tof() / 30.48
+        self.battery = int(self.drone.get_battery())
+        self.temperature = int(self.drone.get_temperature())
+        self.flight_time = int(self.drone.get_flight_time())
+        self.barometer = int(self.drone.get_barometer())
+        self.acceleration_x = int(self.drone.get_acceleration_x())
+        self.acceleration_y = int(self.drone.get_acceleration_y())
+        self.acceleration_z = int(self.drone.get_acceleration_z())
+        self.x_speed = abs(int(self.drone.get_speed_x()))
+        self.y_speed = abs(int(self.drone.get_speed_y()))
+        self.z_speed = abs(int(self.drone.get_speed_z()))
+        self.yaw = int(self.drone.get_yaw())
+        self.pitch = int(self.drone.get_pitch())
+        self.roll = int(self.drone.get_roll())

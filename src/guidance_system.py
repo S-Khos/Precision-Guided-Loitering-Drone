@@ -1,6 +1,3 @@
-from djitellopy import Tello
-import cv2
-import math
 import time
 from pid import PID
 
@@ -13,15 +10,14 @@ class GuidanceSystem(object):
         self.X_PID = [0.2, 0.0, 0.12]
 
     def init_guidance_system(self):
-        if not self.state.KC_manual:
-            self.state.GS_thread = threading.Thread(
-                target=self.process, daemon=True)
-            self.state.GS_thread.start()
-            self.state.GS_active = True
+        self.state.GS_thread = threading.Thread(
+            target=self.update, daemon=True)
+        self.state.GS_thread.start()
 
-    def process(self):
+    def update(self):
+        print("[GUIDANCE CONTROL] - ACTIVE")
+        self.state.GS_active = True
         try:
-            print("[FLT CTRL] - ACTIVE")
 
             yaw_pid = PID(self.YAW_PID[0], self.YAW_PID[1], self.YAW_PID[2],
                           self.state.CENTRE_X, -100, 100)
@@ -31,7 +27,7 @@ class GuidanceSystem(object):
                         self.state.CENTRE_Y, -100, 100)
 
             while self.state.TR_active and not self.state.KC_manual:
-                x, y, w, h = self.state.TR_bbox
+                x, y, w, h = self.state.TR_bbox[0], self.state.TR_bbox[1], self.state.TR_bbox[2], self.state.TR_bbox[3]
                 targetX = int(x + w / 2)
                 targetY = int(y + h / 2)
 
@@ -39,24 +35,18 @@ class GuidanceSystem(object):
                 x_velocity, x_time = x_pid.update(targetX)
                 y_velocity, y_time = y_pid.update(targetY)
 
-                if drone.send_rc_control:
-                    drone.send_rc_control(-x_velocity if abs(x_velocity)
-                                          > 60 else 0, 90 if altitude > 1 and self.state.GS_dive else 0, y_velocity, -yaw_velocity)
+                if self.state.drone.send_rc_control:
+                    self.state.drone.send_rc_control(-x_velocity if abs(x_velocity)
+                                                     > 60 else 0, 90 if self.state.altitude > 1 and self.state.GS_dive else 0, y_velocity, -yaw_velocity)
 
                 time.sleep(0.1)
 
-            yaw_pid.reset()
-            y_pid.reset()
-            x_pid.reset()
             self.state.GS_active = False
-            drone.send_rc_control(0, 0, 0, 0)
-            print("[FLT CTRL] - TERMINATED")
+            self.state.drone.send_rc_control(0, 0, 0, 0)
+            print("[GUIDANCE CONTROL] - TERMINATED")
 
         except Exception as error:
-            yaw_pid.reset()
-            y_pid.reset()
-            x_pid.reset()
             self.state.GS_active = False
             self.state.KC_manual = not self.state.KC_manual
-            drone.send_rc_control(0, 0, 0, 0)
-            print("[FLT CTRL] - ", error)
+            self.state.drone.send_rc_control(0, 0, 0, 0)
+            print("[GUIDANCE CONTROL] - ", error)
