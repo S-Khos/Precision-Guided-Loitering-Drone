@@ -4,8 +4,6 @@ import time
 import threading
 import math
 
-# 1. get rid of getters
-
 
 class FrontEnd(object):
 
