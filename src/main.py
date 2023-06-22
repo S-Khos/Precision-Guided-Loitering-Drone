@@ -11,8 +11,8 @@ def main():
 
     drone = Tello()
     state = State(drone)
-    frontend = FrontEnd(state)
     backend = BackEnd(state)
+    frontend = FrontEnd(state)
 
     try:
         drone.connect()
@@ -21,10 +21,11 @@ def main():
             frame_read = drone.get_frame_read()
             cv2.namedWindow("FEED", cv2.WINDOW_NORMAL)
             cv2.namedWindow("DESIGNATOR", cv2.WINDOW_NORMAL)
-            cv2.moveWindow("FEED", int((1920 // 4) - frontend.CENTRE_X),
-                           int((1080 // 2) - frontend.CENTRE_Y))
-            cv2.moveWindow("DESIGNATOR", int((1920 // 4) + frontend.CENTRE_X + 10),
-                           int((1080 // 2) - frontend.CENTRE_Y))
+            cv2.moveWindow("FEED", int((1920 // 4) - state.CENTRE_X),
+                           int((1080 // 2) - state.CENTRE_Y))
+            cv2.moveWindow("DESIGNATOR", int((1920 // 4) + state.CENTRE_X + 10),
+                           int((1080 // 2) - state.CENTRE_Y))
+
             cv2.setMouseCallback(
                 "DESIGNATOR", backend.cursor_control.event_handler)
 

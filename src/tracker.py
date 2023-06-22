@@ -35,5 +35,5 @@ class Tracker(object):
             self.state.TR_reset = True
             self.state.TR_thread_lock.release()
 
-        drone.send_rc_control(0, 0, 0, 0)
+        self.state.drone.send_rc_control(0, 0, 0, 0)
         print("[TRACK] - TRACKING TERMINATED")

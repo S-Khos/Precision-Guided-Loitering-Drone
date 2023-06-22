@@ -69,7 +69,7 @@ class FrontEnd(object):
 
         # bottom compass
         cv2.circle(self.state.frame, (self.state.FRAME_WIDTH - 60, self.state.FRAME_HEIGHT - 60),
-                   50, UI_COLOUR, 1)
+                   50, self.state.UI_COLOUR, 1)
         cv2.arrowedLine(self.state.frame, (self.state.FRAME_WIDTH - 60, self.state.FRAME_HEIGHT - 60), (int(-50 * math.cos(math.radians(self.state.yaw + 90)) +
                         self.state.FRAME_WIDTH - 60), int((self.state.FRAME_HEIGHT - 60) - (50 * math.sin(math.radians(self.state.yaw + 90))))), self.state.UI_COLOUR, 1, tipLength=.15)
 
@@ -87,20 +87,20 @@ class FrontEnd(object):
 
         # designator cursor
         if not self.state.TR_active and self.state.TR_reset:
-            cv2.rectangle(self.state.designator_frame, (cursor_control.cursor_pos[0], cursor_control.cursor_pos[1]), (
-                cursor_control.cursor_pos[0] + manual_control.designator_roi_size[0], cursor_control.cursor_pos[1] + manual_control.designator_roi_size[1]), self.state.UI_COLOUR, 1)
+            cv2.rectangle(self.state.designator_frame, (self.state.CC_cursor_pos[0], self.state.CC_cursor_pos[1]), (
+                self.state.CC_cursor_pos[0] + self.state.KC_designator_roi_size[0], self.state.CC_cursor_pos[1] + self.state.KC_designator_roi_size[1]), self.state.UI_COLOUR, 1)
             # top
-            cv2.line(self.state.designator_frame, (cursor_control.cursor_pos[0] + manual_control.designator_roi_size[0] // 2, cursor_control.cursor_pos[1]),
-                     (cursor_control.cursor_pos[0] + manual_control.designator_roi_size[0] // 2, 0), self.state.UI_COLOUR, 1)
+            cv2.line(self.state.designator_frame, (self.state.CC_cursor_pos[0] + self.state.KC_designator_roi_size[0] // 2, self.state.CC_cursor_pos[1]),
+                     (self.state.CC_cursor_pos[0] + self.state.KC_designator_roi_size[0] // 2, 0), self.state.UI_COLOUR, 1)
             # left
-            cv2.line(self.state.designator_frame, (cursor_control.cursor_pos[0], cursor_control.cursor_pos[1] + manual_control.designator_roi_size[1] // 2),
-                     (0, cursor_control.cursor_pos[1] + manual_control.designator_roi_size[1] // 2), self.state.UI_COLOUR, 1)
+            cv2.line(self.state.designator_frame, (self.state.CC_cursor_pos[0], self.state.CC_cursor_pos[1] + self.state.KC_designator_roi_size[1] // 2),
+                     (0, self.state.CC_cursor_pos[1] + self.state.KC_designator_roi_size[1] // 2), self.state.UI_COLOUR, 1)
             # right
-            cv2.line(self.state.designator_frame, (cursor_control.cursor_pos[0] + manual_control.designator_roi_size[0], cursor_control.cursor_pos[1] + manual_control.designator_roi_size[1] // 2),
-                     (self.state.FRAME_WIDTH, cursor_control.cursor_pos[1] + manual_control.designator_roi_size[1] // 2), self.state.UI_COLOUR, 1)
+            cv2.line(self.state.designator_frame, (self.state.CC_cursor_pos[0] + self.state.KC_designator_roi_size[0], self.state.CC_cursor_pos[1] + self.state.KC_designator_roi_size[1] // 2),
+                     (self.state.FRAME_WIDTH, self.state.CC_cursor_pos[1] + self.state.KC_designator_roi_size[1] // 2), self.state.UI_COLOUR, 1)
             # bottom
-            cv2.line(self.state.designator_frame, (cursor_control.cursor_pos[0] + manual_control.designator_roi_size[0] // 2, cursor_control.cursor_pos[1] + manual_control.designator_roi_size[1]),
-                     (cursor_control.cursor_pos[0] + manual_control.designator_roi_size[0] // 2, self.state.FRAME_HEIGHT), self.state.UI_COLOUR, 1)
+            cv2.line(self.state.designator_frame, (self.state.CC_cursor_pos[0] + self.state.KC_designator_roi_size[0] // 2, self.state.CC_cursor_pos[1] + self.state.KC_designator_roi_size[1]),
+                     (self.state.CC_cursor_pos[0] + self.state.KC_designator_roi_size[0] // 2, self.state.FRAME_HEIGHT), self.state.UI_COLOUR, 1)
 
         # active tracking / lock
         if self.state.TR_active and not self.state.TR_reset:
