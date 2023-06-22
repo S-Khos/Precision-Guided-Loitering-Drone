@@ -4,7 +4,7 @@ import time
 import threading
 import math
 
-# 1. replace getters with state.drone calls instead
+# 1. get rid of getters
 
 
 class FrontEnd(object):
@@ -43,11 +43,13 @@ class FrontEnd(object):
                  (self.CENTRE_X, self.CENTRE_Y + 10), self.UI_COLOUR, 2)
 
         # crosshair stats
-        spd_size = cv2.getTextSize(
-            "SPD  {} CM/S".format(self.backend.get_speed_mag()), self.FONT, self.FONT_SCALE, self.LINE_THICKNESS)[0][0]
-        cv2.putText(self.frame, "SPD  {} CM/S".format(self.backend.get_speed_mag()), ((self.CENTRE_X) - 90 -
+        spd_size = cv2.getTextSize("SPD  {} CM/S".format(abs(math.sqrt(self.drone.get_speed_x()**2 + self.drone.get_speed_y(
+        )**2 + self.drone.get_speed_z()**2))), self.FONT, self.FONT_SCALE, self.LINE_THICKNESS)[0][0]
+
+        cv2.putText(self.frame, "SPD  {} CM/S".format(abs(math.sqrt(self.drone.get_speed_x()**2 + self.drone.get_speed_y()**2 + self.drone.get_speed_z()**2))), ((self.state.CENTRE_X) - 90 -
                     spd_size, (self.CENTRE_Y) - 100), self.FONT, self.FONT_SCALE, self.UI_COLOUR, self.LINE_THICKNESS)
-        cv2.putText(self.frame, "ALT  {:.1f} FT".format(self.backend.get_altitude()), ((
+
+        cv2.putText(self.frame, "ALT  {:.1f} FT".format(self.drone.get_distance_tof() / 30.48), ((
             self.CENTRE_X) + 90, (self.CENTRE_Y) - 100), self.FONT, self.FONT_SCALE, self.UI_COLOUR, self.LINE_THICKNESS)
 
         # bottom left telemtry
@@ -83,9 +85,6 @@ class FrontEnd(object):
             cv2.putText(self.frame, "AUTO", (self.CENTRE_X - 20, 25),
                         self.FONT, self.FONT_SCALE, self.BLACK, self.LINE_THICKNESS)
 
-            # move this later into a proper place -----------------
-            self.guidance_system.init_guidance_system()
-
         # designator cursor
         if not self.state.TR_active:
             cv2.rectangle(self.designator_frame, (cursor_control.cursor_pos[0], cursor_control.cursor_pos[1]), (
@@ -104,10 +103,10 @@ class FrontEnd(object):
                      (cursor_control.cursor_pos[0] + manual_control.designator_roi_size[0] // 2, self.FRAME_HEIGHT), self.UI_COLOUR, 1)
 
         # active tracking / lock
-        if tracker.active:
+        if self.state.TR_active:
             x, y, w, h = state.TR_bbox[0], state.TR_bbox[1], state.TR_bbox[2], state.TR_bbox[3]
-            if (self.CENTRE_X > x and self.CENTRE_X < x + w and self.CENTRE_Y > y and self.CENTRE_Y < y + h and not manual_control.manual):
-                self.guidance_system.lock = True
+            if (self.CENTRE_X > x and self.CENTRE_X < x + w and self.CENTRE_Y > y and self.CENTRE_Y < y + h and not self.state.KC_manual):
+                self.state.GS_lock = True
                 lock_size = cv2.getTextSize(
                     "LOCK", self.FONT, self.FONT_SCALE, self.LINE_THICKNESS)[0][0]
                 cv2.rectangle(self.frame, (self.CENTRE_X - (lock_size // 2), self.FRAME_HEIGHT - 38),
@@ -115,7 +114,7 @@ class FrontEnd(object):
                 cv2.putText(self.frame, "LOCK", (self.CENTRE_X - (lock_size // 2),
                             self.FRAME_HEIGHT - 22), self.FONT, self.FONT_SCALE, self.BLACK, self.LINE_THICKNESS)
             else:
-                self.guidance_system.lock = False
+                self.state.lock = False
                 trk_size = cv2.getTextSize(
                     "TRK", self.FONT, self.FONT_SCALE, self.LINE_THICKNESS)[0][0]
                 cv2.rectangle(self.frame, (self.CENTRE_X - (trk_size // 2), self.FRAME_HEIGHT - 38),

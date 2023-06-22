@@ -26,6 +26,9 @@ class BackEnd(object):
         if self.state.TR_active and self.state.TR_reset:
             self.tracker.init_tracker()
 
+        if not self.state.KC_manual and not self.state.GS_active and self.state.TR_active:
+            self.guidance_system.init_guidance_system()
+
     def get_altitude(self):
         return self.drone.get_distance_tof() / 30.48
 
@@ -70,6 +73,3 @@ class BackEnd(object):
 
     def get_roll(self):
         return int(self.drone.get_roll())
-
-    def in_manual_control(self):
-        return (self.state.KC_manual and not self.state.GS_active)
