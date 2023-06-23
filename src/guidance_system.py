@@ -41,7 +41,7 @@ class GuidanceSystem(object):
                     self.state.drone.send_rc_control(-x_velocity if abs(x_velocity)
                                                      > 60 else 0, 90 if self.state.altitude > 1 and self.state.GS_dive else 0, y_velocity, -yaw_velocity)
 
-                time.sleep(0.1)
+                time.sleep(0.05)
 
             self.state.GS_active = False
             self.state.drone.send_rc_control(0, 0, 0, 0)

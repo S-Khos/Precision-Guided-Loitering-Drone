@@ -22,7 +22,7 @@ def main():
         cv2.namedWindow("DESIGNATOR", cv2.WINDOW_NORMAL)
         cv2.moveWindow("FEED", int((1920 // 4) - state.CENTRE_X),
                        int((1080 // 2) - state.CENTRE_Y))
-        cv2.moveWindow("DESIGNATOR", int((1920 // 4) + state.CENTRE_X + 10),
+        cv2.moveWindow("DESIGNATOR", int((1920 // 4) + state.CENTRE_X + 3),
                        int((1080 // 2) - state.CENTRE_Y))
 
         cv2.setMouseCallback(

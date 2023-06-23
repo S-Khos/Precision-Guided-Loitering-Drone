@@ -1,6 +1,6 @@
-<mxfile host="app.diagrams.net" modified="2023-06-18T08:42:41.881Z" agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36" etag="IxWKRICTP98MUdsnw9W5" version="21.4.0" type="device">
+<mxfile host="app.diagrams.net" modified="2023-06-23T07:55:01.436Z" agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36" etag="hwlAlEkzNG_Rlw3OPQA1" version="21.5.0" type="device">
   <diagram name="Page-1" id="r33pR2lQ9C8Y5Hk1BLUV">
-    <mxGraphModel dx="1808" dy="1128" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+    <mxGraphModel dx="1808" dy="1129" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
@@ -33,7 +33,7 @@
         <mxCell id="oihkyClCOjOfoxL4Y7NJ-5" value="ELECTRONIC SPEED CONTROLLER" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#008a00;fontColor=#ffffff;strokeColor=#005700;" parent="1" vertex="1">
           <mxGeometry x="20" y="530" width="120" height="60" as="geometry" />
         </mxCell>
-        <mxCell id="s1R_nBdTfsayVXpfCCJa-4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="oihkyClCOjOfoxL4Y7NJ-6" target="oihkyClCOjOfoxL4Y7NJ-8">
+        <mxCell id="s1R_nBdTfsayVXpfCCJa-4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="oihkyClCOjOfoxL4Y7NJ-6" target="oihkyClCOjOfoxL4Y7NJ-8" edge="1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
         <mxCell id="oihkyClCOjOfoxL4Y7NJ-6" value="MICROPROCESSOR" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#008a00;fontColor=#ffffff;strokeColor=#005700;" parent="1" vertex="1">
@@ -45,7 +45,7 @@
         <mxCell id="oihkyClCOjOfoxL4Y7NJ-8" value="CAMERA" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#008a00;fontColor=#ffffff;strokeColor=#005700;" parent="1" vertex="1">
           <mxGeometry x="20" y="130" width="120" height="60" as="geometry" />
         </mxCell>
-        <mxCell id="s1R_nBdTfsayVXpfCCJa-7" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="oihkyClCOjOfoxL4Y7NJ-9" target="oihkyClCOjOfoxL4Y7NJ-2">
+        <mxCell id="s1R_nBdTfsayVXpfCCJa-7" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="oihkyClCOjOfoxL4Y7NJ-9" target="oihkyClCOjOfoxL4Y7NJ-2" edge="1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
         <mxCell id="oihkyClCOjOfoxL4Y7NJ-9" value="MULTI-SENSOR ARRAY" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#008a00;fontColor=#ffffff;strokeColor=#005700;" parent="1" vertex="1">
@@ -69,7 +69,7 @@
         <mxCell id="_Kn-l9ibnhNzPAkDkGM0-1" value="MOTORS" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#1ba1e2;fontColor=#ffffff;strokeColor=#006EAF;" parent="1" vertex="1">
           <mxGeometry x="365" y="530" width="120" height="60" as="geometry" />
         </mxCell>
-        <mxCell id="_Kn-l9ibnhNzPAkDkGM0-15" value="RC TRANSMITTER" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#a20025;fontColor=#ffffff;strokeColor=#6F0000;" parent="1" vertex="1">
+        <mxCell id="_Kn-l9ibnhNzPAkDkGM0-15" value="TRANSMITTER" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#a20025;fontColor=#ffffff;strokeColor=#6F0000;" parent="1" vertex="1">
           <mxGeometry x="1215" y="835" width="120" height="60" as="geometry" />
         </mxCell>
         <mxCell id="_uMvhVb0J8DyFUpc_xka-1" value="" style="whiteSpace=wrap;html=1;aspect=fixed;" parent="1" vertex="1">
@@ -84,7 +84,7 @@
         <mxCell id="_uMvhVb0J8DyFUpc_xka-5" value="ELECTRONIC SPEED CONTROLLER" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#008a00;fontColor=#ffffff;strokeColor=#005700;" parent="1" vertex="1">
           <mxGeometry x="20" y="1120" width="120" height="60" as="geometry" />
         </mxCell>
-        <mxCell id="s1R_nBdTfsayVXpfCCJa-1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0;exitY=0.5;exitDx=0;exitDy=0;" edge="1" parent="1" source="_uMvhVb0J8DyFUpc_xka-6" target="_uMvhVb0J8DyFUpc_xka-9">
+        <mxCell id="s1R_nBdTfsayVXpfCCJa-1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0;exitY=0.5;exitDx=0;exitDy=0;" parent="1" source="_uMvhVb0J8DyFUpc_xka-6" target="_uMvhVb0J8DyFUpc_xka-9" edge="1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
         <mxCell id="_uMvhVb0J8DyFUpc_xka-6" value="VIDEO TRANSMITTER" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#008a00;fontColor=#ffffff;strokeColor=#005700;" parent="1" vertex="1">
@@ -96,7 +96,7 @@
         <mxCell id="_uMvhVb0J8DyFUpc_xka-9" value="CAMERA" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#008a00;fontColor=#ffffff;strokeColor=#005700;" parent="1" vertex="1">
           <mxGeometry x="20" y="720" width="120" height="60" as="geometry" />
         </mxCell>
-        <mxCell id="s1R_nBdTfsayVXpfCCJa-3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="_uMvhVb0J8DyFUpc_xka-11" target="_uMvhVb0J8DyFUpc_xka-3">
+        <mxCell id="s1R_nBdTfsayVXpfCCJa-3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="_uMvhVb0J8DyFUpc_xka-11" target="_uMvhVb0J8DyFUpc_xka-3" edge="1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
         <mxCell id="_uMvhVb0J8DyFUpc_xka-11" value="MULTI-SENSOR ARRAY" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#008a00;fontColor=#ffffff;strokeColor=#005700;" parent="1" vertex="1">
@@ -108,7 +108,7 @@
         <mxCell id="_uMvhVb0J8DyFUpc_xka-13" value="MOTORS" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#1ba1e2;fontColor=#ffffff;strokeColor=#006EAF;" parent="1" vertex="1">
           <mxGeometry x="365" y="1120" width="120" height="60" as="geometry" />
         </mxCell>
-        <mxCell id="s1R_nBdTfsayVXpfCCJa-2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="_uMvhVb0J8DyFUpc_xka-15" target="_uMvhVb0J8DyFUpc_xka-3">
+        <mxCell id="s1R_nBdTfsayVXpfCCJa-2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="_uMvhVb0J8DyFUpc_xka-15" target="_uMvhVb0J8DyFUpc_xka-3" edge="1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
         <mxCell id="_uMvhVb0J8DyFUpc_xka-15" value="RADIO TELEMTRY MODULE" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#008a00;fontColor=#ffffff;strokeColor=#005700;" parent="1" vertex="1">
@@ -143,16 +143,16 @@
         <mxCell id="_xXzs5hKH4HrGxerKHfi-6" value="GUIDE" style="shape=process;whiteSpace=wrap;html=1;backgroundOutline=1;fillColor=#e3c800;fontColor=#000000;strokeColor=#B09500;" parent="1" vertex="1">
           <mxGeometry x="1215" y="735" width="120" height="60" as="geometry" />
         </mxCell>
-        <mxCell id="s1R_nBdTfsayVXpfCCJa-5" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="1" source="_xXzs5hKH4HrGxerKHfi-11" target="oihkyClCOjOfoxL4Y7NJ-6">
+        <mxCell id="s1R_nBdTfsayVXpfCCJa-5" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" parent="1" source="_xXzs5hKH4HrGxerKHfi-11" target="oihkyClCOjOfoxL4Y7NJ-6" edge="1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
         <mxCell id="_xXzs5hKH4HrGxerKHfi-11" value="LONG RANGE COMMS MODULE" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#008a00;fontColor=#ffffff;strokeColor=#005700;" parent="1" vertex="1">
           <mxGeometry x="350" y="226.25" width="120" height="60" as="geometry" />
         </mxCell>
-        <mxCell id="s1R_nBdTfsayVXpfCCJa-9" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="s1R_nBdTfsayVXpfCCJa-8" target="_xXzs5hKH4HrGxerKHfi-1">
+        <mxCell id="s1R_nBdTfsayVXpfCCJa-9" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="s1R_nBdTfsayVXpfCCJa-8" target="_xXzs5hKH4HrGxerKHfi-1" edge="1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="s1R_nBdTfsayVXpfCCJa-8" value="RC RECEIVER" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#a20025;fontColor=#ffffff;strokeColor=#6F0000;" vertex="1" parent="1">
+        <mxCell id="s1R_nBdTfsayVXpfCCJa-8" value="TELEMETRY RECEIVER" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#a20025;fontColor=#ffffff;strokeColor=#6F0000;" parent="1" vertex="1">
           <mxGeometry x="1070" y="425" width="120" height="60" as="geometry" />
         </mxCell>
       </root>

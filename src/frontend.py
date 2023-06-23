@@ -9,9 +9,11 @@ class FrontEnd(object):
 
     def __init__(self, state):
         self.state = state
+        self.thread_lock = threading.Lock()
         self.fps_init_time = time.time()
 
     def update(self):
+        self.thread_lock.acquire()
         self.state.frame = cv2.cvtColor(self.state.frame, cv2.COLOR_BGR2RGB)
         self.state.designator_frame = self.state.frame.copy()
         # fps
@@ -152,3 +154,5 @@ class FrontEnd(object):
             # bottom
             self.state.frame = cv2.line(self.state.frame, (x + w // 2, y + h),
                                         (x + w // 2, self.state.FRAME_HEIGHT), self.state.UI_COLOUR, 1)
+
+            self.thread_lock.release()
