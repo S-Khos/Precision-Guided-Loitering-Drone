@@ -34,6 +34,7 @@ class State(object):
         self.TR_thread = None
         self.TR_designator_frame = None
         self.TR_bbox = []
+        self.TR_return = False
         self.TR_thread_lock = threading.Lock()
 
         self.GS_active = False

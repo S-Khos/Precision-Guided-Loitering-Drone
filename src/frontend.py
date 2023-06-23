@@ -100,8 +100,9 @@ class FrontEnd(object):
                                                    (self.state.CC_cursor_pos[0] + self.state.KC_designator_roi_size[0] // 2, self.state.FRAME_HEIGHT), self.state.UI_COLOUR, 1)
 
         # active tracking / lock
-        if self.state.TR_active and not self.state.TR_reset:
-            x, y, w, h = [int(value) for value in self.state.TR_bbox]
+        if self.state.TR_active and self.state.TR_return:
+            x, y, w, h = int(self.state.TR_bbox[0]), int(self.state.TR_bbox[1]), int(
+                self.state.TR_bbox[2]), int(self.state.TR_bbox[3])
             if (self.state.CENTRE_X > x and self.state.CENTRE_X < x + w and self.state.CENTRE_Y > y and self.state.CENTRE_Y < y + h and not self.state.KC_manual):
                 self.state.GS_lock = True
                 lock_size = cv2.getTextSize(

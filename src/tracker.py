@@ -21,9 +21,11 @@ class Tracker(object):
         print("[TRACK] - TRACKING ACTIVE")
         try:
             while self.state.TR_active:
-                tracker_ret, self.state.TR_bbox = self.state.TR_tracker.update(
+                self.state.TR_thread_lock.acquire()
+                self.state.TR_return, self.state.TR_bbox = self.state.TR_tracker.update(
                     self.state.designator_frame)
-                if not tracker_ret:
+                self.state.TR_thread_lock.release()
+                if not self.state.TR_return:
                     self.state.TR_thread_lock.acquire()
                     self.state.TR_active = False
                     self.state.TR_reset = True
@@ -35,5 +37,9 @@ class Tracker(object):
             self.state.TR_reset = True
             self.state.TR_thread_lock.release()
 
+        self.state.TR_thread_lock.acquire()
+        self.state.TR_active = False
+        self.state.TR_reset = True
+        self.state.TR_thread_lock.release()
         self.state.drone.send_rc_control(0, 0, 0, 0)
         print("[TRACK] - TRACKING TERMINATED")

@@ -1,4 +1,5 @@
 import time
+import threading
 from pid import PID
 
 
@@ -26,8 +27,9 @@ class GuidanceSystem(object):
             y_pid = PID(self.Y_PID[0], self.Y_PID[1], self.Y_PID[2],
                         self.state.CENTRE_Y, -100, 100)
 
-            while self.state.TR_active and not self.state.KC_manual:
-                x, y, w, h = [int(value) for value in self.state.TR_bbox]
+            while self.state.TR_active and not self.state.KC_manual and self.state.TR_return:
+                x, y, w, h = int(self.state.TR_bbox[0]), int(self.state.TR_bbox[1]), int(
+                    self.state.TR_bbox[2]), int(self.state.TR_bbox[3])
                 targetX = int(x + w / 2)
                 targetY = int(y + h / 2)
 
