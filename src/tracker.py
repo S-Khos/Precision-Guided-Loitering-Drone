@@ -11,7 +11,7 @@ class Tracker(object):
         self.state.TR_reset = False
         self.state.TR_tracker = cv2.legacy.TrackerCSRT_create()
         self.state.TR_tracker.init(
-            self.state.designator_frame, (self.state.CC_cursor_pos[0], self.state.CC_cursor_pos[1], self.state.KC_designator_roi_size[0], self.state.KC_designator_roi_size[1]))
+            self.state.frame, (self.state.CC_cursor_pos[0], self.state.CC_cursor_pos[1], self.state.KC_designator_roi_size[0], self.state.KC_designator_roi_size[1]))
 
         self.state.TR_thread = threading.Thread(
             target=self.update, daemon=True)
@@ -23,7 +23,7 @@ class Tracker(object):
             while self.state.TR_active:
                 self.state.TR_thread_lock.acquire()
                 self.state.TR_return, self.state.TR_bbox = self.state.TR_tracker.update(
-                    self.state.designator_frame)
+                    self.state.frame)
                 self.state.TR_thread_lock.release()
                 if not self.state.TR_return:
                     self.state.TR_thread_lock.acquire()
@@ -31,7 +31,7 @@ class Tracker(object):
                     self.state.TR_reset = True
                     self.state.TR_thread_lock.release()
         except:
-            print("[TRACK] - Invalid Coordinates")
+            print("[TRACK] - Invalid Input")
             self.state.TR_thread_lock.acquire()
             self.state.TR_active = False
             self.state.TR_reset = True

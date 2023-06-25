@@ -13,7 +13,6 @@ class FeedStream(object):
         self.state = State(self.drone)
         self.backend = BackEnd(self.state)
         self.frontend = FrontEnd(self.state)
-        self.thread_lock = threading.Lock()
         self.drone.connect()
         if (self.drone.get_battery() > 25):
             self.drone.streamon()
@@ -27,10 +26,9 @@ class FeedStream(object):
     def update(self):
         while True:
             if self.frame_read:
-                self.thread_lock.acquire()
                 self.state.frame = self.frame_read.frame
-                self.thread_lock.release()
-           # time.sleep(0.01)
+
+            time.sleep(0.1)
 
         self.drone.streamoff()
         self.drone.end()
@@ -42,7 +40,6 @@ class FeedStream(object):
                        int((1080 // 2) - self.state.CENTRE_Y))
         cv2.moveWindow("DESIGNATOR", int((1920 // 4) + self.state.CENTRE_X + 5),
                        int((1080 // 2) - self.state.CENTRE_Y))
-
         cv2.setMouseCallback(
             "DESIGNATOR", self.backend.cursor_control.event_handler)
 
@@ -63,5 +60,6 @@ if __name__ == "__main__":
     while True:
         try:
             feed_stream.show_frame()
-        except AttributeError:
-            pass
+        except Exception as error:
+            print(error)
+            break

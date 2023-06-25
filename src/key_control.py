@@ -7,13 +7,9 @@ import cv2
 class KeyControl(object):
     def __init__(self, state):
         self.state = state
-
         self.key_listener = keyboard.Listener(
             on_press=self.on_key_press, on_release=self.on_key_release, daemon=True)
         self.key_listener.start()
-
-    def on_key_release(self, key):
-        return True
 
     def on_key_press(self, key):
         try:
@@ -53,3 +49,6 @@ class KeyControl(object):
 
         except:
             print("[Key Control] - Invalid key.")
+
+    def on_key_release(self, key):
+        return True

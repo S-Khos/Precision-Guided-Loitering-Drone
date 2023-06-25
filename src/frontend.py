@@ -1,7 +1,5 @@
 import cv2
-import numpy as np
 import time
-import threading
 import math
 
 
@@ -9,13 +7,11 @@ class FrontEnd(object):
 
     def __init__(self, state):
         self.state = state
-        self.thread_lock = threading.Lock()
         self.fps_init_time = time.time()
 
     def update(self):
-        self.thread_lock.acquire()
         self.state.frame = cv2.cvtColor(self.state.frame, cv2.COLOR_BGR2RGB)
-        self.state.designator_frame = self.state.frame.copy()
+        # self.state.designator_frame = self.state.frame.copy()
         # fps
         elapsed_time = time.time() - self.fps_init_time
         fps = int(1 / elapsed_time)
@@ -86,20 +82,20 @@ class FrontEnd(object):
 
         # designator cursor
         if not self.state.TR_active and self.state.TR_reset:
-            self.state.designator_frame = cv2.rectangle(self.state.designator_frame, (self.state.CC_cursor_pos[0], self.state.CC_cursor_pos[1]), (
+            self.state.frame = cv2.rectangle(self.state.frame, (self.state.CC_cursor_pos[0], self.state.CC_cursor_pos[1]), (
                 self.state.CC_cursor_pos[0] + self.state.KC_designator_roi_size[0], self.state.CC_cursor_pos[1] + self.state.KC_designator_roi_size[1]), self.state.UI_COLOUR, 1)
             # top
-            self.state.designator_frame = cv2.line(self.state.designator_frame, (self.state.CC_cursor_pos[0] + self.state.KC_designator_roi_size[0] // 2, self.state.CC_cursor_pos[1]),
-                                                   (self.state.CC_cursor_pos[0] + self.state.KC_designator_roi_size[0] // 2, 0), self.state.UI_COLOUR, 1)
+            self.state.frame = cv2.line(self.state.frame, (self.state.CC_cursor_pos[0] + self.state.KC_designator_roi_size[0] // 2, self.state.CC_cursor_pos[1]),
+                                        (self.state.CC_cursor_pos[0] + self.state.KC_designator_roi_size[0] // 2, 0), self.state.UI_COLOUR, 1)
             # left
-            self.state.designator_frame = cv2.line(self.state.designator_frame, (self.state.CC_cursor_pos[0], self.state.CC_cursor_pos[1] + self.state.KC_designator_roi_size[1] // 2),
-                                                   (0, self.state.CC_cursor_pos[1] + self.state.KC_designator_roi_size[1] // 2), self.state.UI_COLOUR, 1)
+            self.state.frame = cv2.line(self.state.frame, (self.state.CC_cursor_pos[0], self.state.CC_cursor_pos[1] + self.state.KC_designator_roi_size[1] // 2),
+                                        (0, self.state.CC_cursor_pos[1] + self.state.KC_designator_roi_size[1] // 2), self.state.UI_COLOUR, 1)
             # right
-            self.state.designator_frame = cv2.line(self.state.designator_frame, (self.state.CC_cursor_pos[0] + self.state.KC_designator_roi_size[0], self.state.CC_cursor_pos[1] + self.state.KC_designator_roi_size[1] // 2),
-                                                   (self.state.FRAME_WIDTH, self.state.CC_cursor_pos[1] + self.state.KC_designator_roi_size[1] // 2), self.state.UI_COLOUR, 1)
+            self.state.frame = cv2.line(self.state.frame, (self.state.CC_cursor_pos[0] + self.state.KC_designator_roi_size[0], self.state.CC_cursor_pos[1] + self.state.KC_designator_roi_size[1] // 2),
+                                        (self.state.FRAME_WIDTH, self.state.CC_cursor_pos[1] + self.state.KC_designator_roi_size[1] // 2), self.state.UI_COLOUR, 1)
             # bottom
-            self.state.designator_frame = cv2.line(self.state.designator_frame, (self.state.CC_cursor_pos[0] + self.state.KC_designator_roi_size[0] // 2, self.state.CC_cursor_pos[1] + self.state.KC_designator_roi_size[1]),
-                                                   (self.state.CC_cursor_pos[0] + self.state.KC_designator_roi_size[0] // 2, self.state.FRAME_HEIGHT), self.state.UI_COLOUR, 1)
+            self.state.frame = cv2.line(self.state.frame, (self.state.CC_cursor_pos[0] + self.state.KC_designator_roi_size[0] // 2, self.state.CC_cursor_pos[1] + self.state.KC_designator_roi_size[1]),
+                                        (self.state.CC_cursor_pos[0] + self.state.KC_designator_roi_size[0] // 2, self.state.FRAME_HEIGHT), self.state.UI_COLOUR, 1)
 
         # active tracking / lock
         if self.state.TR_active and self.state.TR_return:
@@ -154,5 +150,3 @@ class FrontEnd(object):
             # bottom
             self.state.frame = cv2.line(self.state.frame, (x + w // 2, y + h),
                                         (x + w // 2, self.state.FRAME_HEIGHT), self.state.UI_COLOUR, 1)
-
-            self.thread_lock.release()
