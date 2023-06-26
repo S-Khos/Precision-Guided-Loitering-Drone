@@ -69,7 +69,7 @@ class FrontEnd(object):
                                                                                                                                self.state.FRAME_WIDTH - 60), int((self.state.FRAME_HEIGHT - 60) - (50 * math.sin(math.radians(self.state.yaw + 90))))), self.state.UI_COLOUR, 1, tipLength=.15)
 
         # top center
-        if (self.state.KC_manual and not self.state.GS_active):
+        if (self.state.KC_manual):
             self.state.frame = cv2.rectangle(self.state.frame, (self.state.CENTRE_X - 20, 10),
                                              (self.state.CENTRE_X + 29, 28), self.state.UI_COLOUR, -1)
             self.state.frame = cv2.putText(self.state.frame, "CTRL", (self.state.CENTRE_X - 20, 25),

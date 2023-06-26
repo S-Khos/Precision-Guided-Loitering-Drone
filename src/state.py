@@ -58,19 +58,22 @@ class State(object):
         self.yaw = 0
         self.pitch = 0
         self.roll = 0
+        self.state_dict = {}
 
     def update(self):
-        self.altitude = self.drone.get_distance_tof() / 30.48
-        self.battery = int(self.drone.get_battery())
+        self.state_dict = self.drone.get_current_state()
+        # {'mid': -1, 'x': -100, 'y': -100, 'z': -100, 'mpry': '0,0,0', 'pitch': 0, 'roll': 0, 'yaw': 47, 'vgx': 0, 'vgy': 0, 'vgz': 0, 'templ': 75, 'temph': 78, 'tof': 10, 'h': 0, 'bat': 94, 'baro': 146.67, 'time': 0, 'agx': -2.0, 'agy': -15.0, 'agz': -999.0}
+        self.altitude = (self.state_dict['tof'] / 30.48)
+        self.battery = int(self.state_dict['bat'])
         self.temperature = int(self.drone.get_temperature())
-        self.flight_time = int(self.drone.get_flight_time())
-        self.barometer = int(self.drone.get_barometer() / 30.48)
-        self.acceleration_x = int(self.drone.get_acceleration_x())
-        self.acceleration_y = int(self.drone.get_acceleration_y())
-        self.acceleration_z = int(self.drone.get_acceleration_z())
-        self.x_speed = abs(int(self.drone.get_speed_x()))
-        self.y_speed = abs(int(self.drone.get_speed_y()))
-        self.z_speed = abs(int(self.drone.get_speed_z()))
-        self.yaw = int(self.drone.get_yaw())
-        self.pitch = int(self.drone.get_pitch())
-        self.roll = int(self.drone.get_roll())
+        self.flight_time = int(self.state_dict['time'])
+        self.barometer = int(self.state_dict['baro'] * 3.281)
+        self.acceleration_x = int(self.state_dict['agx'])
+        self.acceleration_y = int(self.state_dict['agy'])
+        self.acceleration_z = int(self.state_dict['agz'])
+        self.x_speed = abs(int(self.state_dict['vgx']))
+        self.y_speed = abs(int(self.state_dict['vgy']))
+        self.z_speed = abs(int(self.state_dict['vgz']))
+        self.yaw = int(self.state_dict['yaw'])
+        self.pitch = int(self.state_dict['pitch'])
+        self.roll = int(self.state_dict['roll'])

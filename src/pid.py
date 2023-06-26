@@ -1,5 +1,4 @@
 import time
-from numba import jit
 
 
 class PID(object):
@@ -20,7 +19,6 @@ class PID(object):
         self.MAX_SPD = upper_bound
         self.MIN_SPD = lower_bound
 
-    @jit(nopython=True)
     def update(self, cur_position, cur_time=None):
         self.error = self.target - cur_position
         self.cur_time = cur_time if cur_time is not None else time.time()
