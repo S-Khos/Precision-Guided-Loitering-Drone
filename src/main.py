@@ -17,12 +17,14 @@ def main():
         drone.streamon()
         frame_read = drone.get_frame_read()
         cv2.namedWindow("FEED", cv2.WINDOW_NORMAL)
-        cv2.moveWindow("FEED", int((1920 // 2) - state.CENTRE_X),
-                       int((1080 // 2) - state.CENTRE_Y))
+        cv2.moveWindow("FEED", int((1920 // 2) - state.FRAME_WIDTH // 2),
+                       int((1080 // 2) - state.FRAME_HEIGHT // 2))
         cv2.setMouseCallback(
             "FEED", backend.cursor_control.event_handler)
         while frame_read:
             state.frame = frame_read.frame
+            state.frame = cv2.cvtColor(state.frame, cv2.COLOR_BGR2RGB)
+            state.designator_frame = state.frame.copy()
             state.update()
             backend.update()
             frontend.update()

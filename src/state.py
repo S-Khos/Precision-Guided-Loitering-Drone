@@ -20,7 +20,7 @@ class State(object):
         self.BLUE = (255, 0, 0)
         self.WHITE = (255, 255, 255)
         self.BLACK = (0, 0, 0)
-        self.UI_COLOUR = self.WHITE
+        self.UI_COLOUR = self.GREEN
         self.LINE_THICKNESS = 1
 
         self.KC_manual = True
@@ -42,7 +42,8 @@ class State(object):
         self.GS_lock = False
         self.GS_dive = False
 
-        self.CC_cursor_pos = [self.CENTRE_X, self.CENTRE_Y]
+        self.CC_cursor_pos = [self.CENTRE_X - self.KC_designator_roi_size[0] //
+                              2, self.CENTRE_Y - self.KC_designator_roi_size[1] // 2]
 
         self.altitude = 0
         self.battery = 0
@@ -62,7 +63,6 @@ class State(object):
 
     def update(self):
         self.state_dict = self.drone.get_current_state()
-        # {'mid': -1, 'x': -100, 'y': -100, 'z': -100, 'mpry': '0,0,0', 'pitch': 0, 'roll': 0, 'yaw': 47, 'vgx': 0, 'vgy': 0, 'vgz': 0, 'templ': 75, 'temph': 78, 'tof': 10, 'h': 0, 'bat': 94, 'baro': 146.67, 'time': 0, 'agx': -2.0, 'agy': -15.0, 'agz': -999.0}
         self.altitude = (self.state_dict['tof'] / 30.48)
         self.battery = int(self.state_dict['bat'])
         self.temperature = int(self.drone.get_temperature())

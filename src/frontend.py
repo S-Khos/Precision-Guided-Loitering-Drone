@@ -10,8 +10,6 @@ class FrontEnd(object):
         self.fps_init_time = time.time()
 
     def update(self):
-        self.state.frame = cv2.cvtColor(self.state.frame, cv2.COLOR_BGR2RGB)
-        # self.state.designator_frame = self.state.frame.copy()
         # fps
         elapsed_time = time.time() - self.fps_init_time
         fps = int(1 / elapsed_time)
@@ -69,7 +67,7 @@ class FrontEnd(object):
                                                                                                                                self.state.FRAME_WIDTH - 60), int((self.state.FRAME_HEIGHT - 60) - (50 * math.sin(math.radians(self.state.yaw + 90))))), self.state.UI_COLOUR, 1, tipLength=.15)
 
         # top center
-        if (self.state.KC_manual):
+        if (self.state.KC_manual and not self.state.GS_active):
             self.state.frame = cv2.rectangle(self.state.frame, (self.state.CENTRE_X - 20, 10),
                                              (self.state.CENTRE_X + 29, 28), self.state.UI_COLOUR, -1)
             self.state.frame = cv2.putText(self.state.frame, "CTRL", (self.state.CENTRE_X - 20, 25),
