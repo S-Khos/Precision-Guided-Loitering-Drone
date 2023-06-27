@@ -39,8 +39,8 @@ class FrontEnd(object):
         spd_size = cv2.getTextSize("SPD  {} CM/S".format(self.state.z_speed),
                                    self.state.FONT, self.state.FONT_SCALE, self.state.LINE_THICKNESS)[0][0]
 
-        self.state.frame = cv2.putText(self.state.frame, "SPD  {} CM/S".format(self.state.z_speed), ((self.state.CENTRE_X) - 90 -
-                                                                                                     spd_size, (self.state.CENTRE_Y) - 100), self.state.FONT, self.state.FONT_SCALE, self.state.UI_COLOUR, self.state.LINE_THICKNESS)
+        self.state.frame = cv2.putText(self.state.frame, "SPD  {} CM/S".format(self.state.z_speed), ((self.state.CENTRE_X) - 90 - spd_size,
+                                       (self.state.CENTRE_Y) - 100), self.state.FONT, self.state.FONT_SCALE, self.state.UI_COLOUR, self.state.LINE_THICKNESS)
 
         self.state.frame = cv2.putText(self.state.frame, "ALT  {:.1f} FT".format(self.state.altitude), ((
             self.state.CENTRE_X) + 90, (self.state.CENTRE_Y) - 100), self.state.FONT, self.state.FONT_SCALE, self.state.UI_COLOUR, self.state.LINE_THICKNESS)
