@@ -35,8 +35,8 @@ class GuidanceControl(object):
                 y_velocity, y_time = y_pid.update(targetY)
                 if self.state.drone.send_rc_control:
                     self.state.drone.send_rc_control(
-                        -x_velocity if abs(x_velocity) > 65 else 0, 85 if self.state.altitude > 1 and self.state.GS_dive else 0, y_velocity, -yaw_velocity if abs(yaw_velocity) < 65 else 0)
-                time.sleep(0.012)
+                        -x_velocity if abs(x_velocity) > 65 else 0, 90 if self.state.altitude > 1 and self.state.GS_dive else 0, y_velocity, -yaw_velocity if abs(yaw_velocity) < 65 else 0)
+                time.sleep(0.014)
             self.state.GS_active = False
             self.state.KC_manual = True
             self.state.drone.send_rc_control(0, 0, 0, 0)
