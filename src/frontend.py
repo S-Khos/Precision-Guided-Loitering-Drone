@@ -99,7 +99,7 @@ class FrontEnd(object):
         if self.state.TR_active and self.state.TR_return:
             x, y, w, h = int(self.state.TR_bbox[0]), int(self.state.TR_bbox[1]), int(
                 self.state.TR_bbox[2]), int(self.state.TR_bbox[3])
-            if (self.state.CENTRE_X > x and self.state.CENTRE_X < x + w and self.state.CENTRE_Y > y and self.state.CENTRE_Y < y + h and not self.state.KC_manual):
+            if (self.state.CENTRE_X > x and self.state.CENTRE_X < x + w and self.state.CENTRE_Y > y and self.state.CENTRE_Y < y + h and self.state.GS_dive):
                 self.state.GS_lock = True
                 lock_size = cv2.getTextSize(
                     "LOCK", self.state.FONT, self.state.FONT_SCALE, self.state.LINE_THICKNESS)[0][0]
@@ -108,7 +108,7 @@ class FrontEnd(object):
                 self.state.frame = cv2.putText(self.state.frame, "LOCK", (self.state.CENTRE_X - (lock_size // 2),
                                                                           self.state.FRAME_HEIGHT - 22), self.state.FONT, self.state.FONT_SCALE, self.state.BLACK, self.state.LINE_THICKNESS)
             else:
-                self.state.lock = False
+                self.state.GS_lock = False
                 trk_size = cv2.getTextSize(
                     "TRK", self.state.FONT, self.state.FONT_SCALE, self.state.LINE_THICKNESS)[0][0]
                 self.state.frame = cv2.rectangle(self.state.frame, (self.state.CENTRE_X - (trk_size // 2), self.state.FRAME_HEIGHT - 38),
@@ -117,25 +117,25 @@ class FrontEnd(object):
                                                                          self.state.FRAME_HEIGHT - 22), self.state.FONT, self.state.FONT_SCALE, self.state.BLACK, self.state.LINE_THICKNESS)
 
             self.state.frame = cv2.line(self.state.frame, (x, y), (x + 20, y),
-                                        self.state.RED if self.state.GS_dive else self.state.UI_COLOUR, 2)
+                                        self.state.RED if self.state.GS_lock else self.state.UI_COLOUR, 2)
             self.state.frame = cv2.line(self.state.frame, (x, y), (x, y + 20),
-                                        self.state.RED if self.state.GS_dive else self.state.UI_COLOUR, 2)
+                                        self.state.RED if self.state.GS_lock else self.state.UI_COLOUR, 2)
             self.state.frame = cv2.line(self.state.frame, (x, y + h), (x, y + h - 20),
-                                        self.state.RED if self.state.GS_dive else self.state.UI_COLOUR, 2)
+                                        self.state.RED if self.state.GS_lock else self.state.UI_COLOUR, 2)
             self.state.frame = cv2.line(self.state.frame, (x, y + h), (x + 20, y + h),
-                                        self.state.RED if self.state.GS_dive else self.state.UI_COLOUR, 2)
+                                        self.state.RED if self.state.GS_lock else self.state.UI_COLOUR, 2)
 
             self.state.frame = cv2.line(self.state.frame, (x + w, y), (x + w - 20, y),
-                                        self.state.RED if self.state.GS_dive else self.state.UI_COLOUR, 2)
+                                        self.state.RED if self.state.GS_lock else self.state.UI_COLOUR, 2)
             self.state.frame = cv2.line(self.state.frame, (x + w, y), (x + w, y + 20),
-                                        self.state.RED if self.state.GS_dive else self.state.UI_COLOUR, 2)
+                                        self.state.RED if self.state.GS_lock else self.state.UI_COLOUR, 2)
             self.state.frame = cv2.line(self.state.frame, (x + w, y + h), (x + w, y + h - 20),
-                                        self.state.RED if self.state.GS_dive else self.state.UI_COLOUR, 2)
+                                        self.state.RED if self.state.GS_lock else self.state.UI_COLOUR, 2)
             self.state.frame = cv2.line(self.state.frame, (x + w, y + h), (x + w - 20, y + h),
-                                        self.state.RED if self.state.GS_dive else self.state.UI_COLOUR, 2)
+                                        self.state.RED if self.state.GS_lock else self.state.UI_COLOUR, 2)
 
             self.state.frame = cv2.circle(self.state.frame, (x + w // 2, y + h // 2), 3,
-                                          self.state.RED if self.state.GS_dive else self.state.UI_COLOUR, -1)
+                                          self.state.RED if self.state.GS_lock else self.state.UI_COLOUR, -1)
             # top
             self.state.frame = cv2.line(self.state.frame, (x + w // 2, y),
                                         (x + w // 2, 0), self.state.UI_COLOUR, 1)
