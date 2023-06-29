@@ -1,4 +1,4 @@
-from tello import Tello
+from drone import Tello
 import cv2
 import time
 import threading
