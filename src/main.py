@@ -1,4 +1,4 @@
-from djitellopy import Tello
+from tello import Tello
 import cv2
 import time
 import threading
