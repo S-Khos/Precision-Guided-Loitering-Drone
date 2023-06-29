@@ -1,4 +1,4 @@
-# Precision Guided Drone
+# Precision Guided Loitering Drone
 
 A mock precision guided loitering munition drone with autonomous homing capabilities using computer vision and deep learning techniques.
 
