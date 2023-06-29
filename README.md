@@ -1,6 +1,6 @@
 # Precision Guided Loitering Drone
 
-A mock precision guided loitering munition drone with autonomous homing capabilities using computer vision and deep learning techniques.
+A mock precision guided loitering drone with autonomous homing capabilities using computer vision and deep learning techniques.
 
 ## UML class diagram
 
