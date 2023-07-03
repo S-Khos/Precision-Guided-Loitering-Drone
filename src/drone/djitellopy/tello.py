@@ -22,15 +22,9 @@ class TelloException(Exception):
 
 @enforce_types
 class Tello:
-    """Python wrapper to interact with the Ryze Tello drone using the official Tello api.
-    Tello API documentation:
-    [1.3](https://dl-cdn.ryzerobotics.com/downloads/tello/20180910/Tello%20SDK%20Documentation%20EN_1.3.pdf),
-    [2.0 with EDU-only commands](https://dl-cdn.ryzerobotics.com/downloads/Tello/Tello%20SDK%202.0%20User%20Guide.pdf)
-    """
-    # Send and receive commands, client socket
-    RESPONSE_TIMEOUT = 5  # in seconds
+    RESPONSE_TIMEOUT = 4  # in seconds
     TAKEOFF_TIMEOUT = 10  # in seconds
-    FRAME_GRAB_TIMEOUT = 5
+    FRAME_GRAB_TIMEOUT = 4
     TIME_BTW_COMMANDS = 0.1  # in seconds
     TIME_BTW_RC_CONTROL_COMMANDS = 0  # in seconds
     RETRY_COUNT = 2  # number of retries after a failed command
