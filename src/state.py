@@ -39,10 +39,10 @@ class State(object):
         self.GS_thread = None
         self.GS_lock = False
         self.GS_dive = False
-        self.forward_Throttle = 0
+        self.fb_Throttle = 0
         self.yaw_Throttle = 0
         self.lr_Throttle = 0
-        self.y_Throttle = 0
+        self.h_Throttle = 0
 
         self.CC_cursor_pos = [self.CENTRE_X - self.KC_designator_roi_size[0] //
                               2, self.CENTRE_Y - self.KC_designator_roi_size[1] // 2]
