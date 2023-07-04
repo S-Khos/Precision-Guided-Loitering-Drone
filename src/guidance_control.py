@@ -6,9 +6,9 @@ from pid import PID
 class GuidanceControl(object):
     def __init__(self, state):
         self.state = state
-        self.YAW_PID = [0.35, 0.02, 0.14]  # 0.32, 0, 0.06
-        self.Y_PID = [1.6, 0.1, 0.8]  # 0.1, 0.3, 0.3,
-        self.X_PID = [0.6, 0.01, 0.35]
+        self.YAW_PID = [0.32, 0.02, 0.14]  # 0.32, 0, 0.06
+        self.Y_PID = [1.7, 0.1, 0.3]  # 0.1, 0.3, 0.3,
+        self.X_PID = [0.3, 0.02, 0.14]
 
     def init_guidance_control(self):
         self.state.GS_thread = threading.Thread(
@@ -35,8 +35,8 @@ class GuidanceControl(object):
                 y_velocity, y_time = y_pid.update(targetY)
                 if self.state.drone.send_rc_control:
                     self.state.drone.send_rc_control(
-                        -x_velocity if abs(x_velocity) > 75 else 0, 85 if self.state.altitude > 1.3 and self.state.GS_dive else 0, y_velocity if self.state.GS_dive else 0, -yaw_velocity if abs(yaw_velocity) < 65 else 0)
-                time.sleep(0.014)
+                        -x_velocity if abs(-x_velocity) >= 70 else 0, 50 if self.state.altitude > 2 and self.state.GS_dive else 0, y_velocity if y_velocity < 30 else 0, -yaw_velocity if abs(-yaw_velocity) < 70 else 0)
+                time.sleep(0.013)
             self.state.GS_active = False
             self.state.KC_manual = True
             self.state.drone.send_rc_control(0, 0, 0, 0)

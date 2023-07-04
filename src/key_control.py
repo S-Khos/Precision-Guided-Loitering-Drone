@@ -1,4 +1,3 @@
-from djitellopy import Tello
 from pynput import keyboard
 import threading
 import cv2

@@ -1,7 +1,7 @@
-from drone.djitellopy import Tello
 import cv2
 import time
 import threading
+from drone.djitellopy import Tello
 from state import State
 from frontend import FrontEnd
 from backend import BackEnd
@@ -17,8 +17,8 @@ def main():
         drone.streamon()
         frame_read = drone.get_frame_read()
         cv2.namedWindow("FEED", cv2.WINDOW_NORMAL)
-        cv2.moveWindow("FEED", int((1920 // 2) - state.FRAME_WIDTH // 2),
-                       int((1080 // 2) - state.FRAME_HEIGHT // 2))
+        cv2.moveWindow("FEED", int((1920 / 2) - int(state.FRAME_WIDTH / 2)),
+                       int((1080 / 2) - int(state.FRAME_HEIGHT / 2)))
         cv2.setMouseCallback(
             "FEED", backend.cursor_control.event_handler)
         while frame_read:
