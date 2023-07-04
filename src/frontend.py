@@ -36,7 +36,7 @@ class FrontEnd(object):
                                     (self.state.CENTRE_X, self.state.CENTRE_Y + 10), self.state.UI_COLOUR, 2)
 
         # crosshair stats
-        spd_size = cv2.getTextSize("SPD  {} CM/S".format(self.state.z_speed),
+        spd_size = cv2.getTextSize("SPD  {} CM/S".format(self.state.y_speed),
                                    self.state.FONT, self.state.FONT_SCALE, self.state.LINE_THICKNESS)[0][0]
 
         self.state.frame = cv2.putText(self.state.frame, "SPD  {} CM/S".format(self.state.z_speed), ((self.state.CENTRE_X) - 90 - spd_size,
