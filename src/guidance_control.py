@@ -6,7 +6,7 @@ from pid import PID
 class GuidanceControl(object):
     def __init__(self, state):
         self.state = state
-        self.YAW_PID = [0.34, 0.05, 0.15]  # 0.32, 0, 0.06
+        self.YAW_PID = [0.32, 0.03, 0.14]  # 0.32, 0, 0.06
         self.Y_PID = [2.0, 0, 1]  # 0.1, 0.3, 0.3,
         self.X_PID = [0.2, 0.02, 0.1]
         self.yaw_pivot = 50
@@ -34,10 +34,13 @@ class GuidanceControl(object):
                 self.state.yaw_Throttle, yaw_time = yaw_pid.update(targetX)
                 self.state.lr_Throttle, x_time = x_pid.update(targetX)
                 self.state.h_Throttle, y_time = y_pid.update(targetY)
+
                 self.state.h_Throttle = int(
                     self.state.h_Throttle / 2.5) if self.state.h_Throttle > 0 else self.state.h_Throttle
-                self.state.fb_Throttle = int(self.state.fb_Throttle / 1.1) if self.state.h_Throttle < - \
-                    30 and self.state.GS_dive else 100
+
+                self.state.fb_Throttle = int(self.state.fb_Throttle / 0.5) if self.state.h_Throttle < - \
+                    20 and self.state.GS_dive else 100
+
                 if self.state.drone.send_rc_control:
                     self.state.drone.send_rc_control(-self.state.lr_Throttle if abs(-self.state.lr_Throttle) >= self.yaw_pivot else 0, self.state.fb_Throttle if self.state.altitude >
                                                      1.3 and self.state.GS_dive else 0, self.state.h_Throttle if self.state.GS_dive else 0, -self.state.yaw_Throttle if abs(-self.state.yaw_Throttle) < self.yaw_pivot else 0)

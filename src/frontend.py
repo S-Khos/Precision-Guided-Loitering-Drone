@@ -1,6 +1,7 @@
 import cv2
 import time
 import math
+import numpy as np
 
 
 class FrontEnd(object):
@@ -36,16 +37,18 @@ class FrontEnd(object):
                                     (self.state.CENTRE_X, self.state.CENTRE_Y + 10), self.state.UI_COLOUR, 2)
 
         # crosshair stats
-        spd_size = cv2.getTextSize("SPD  {} CM/S".format(self.state.y_speed),
+        spd_size = cv2.getTextSize("SPD  {} CM/S".format(int(np.hypot(self.state.x_speed, self.state.y_speed))),
                                    self.state.FONT, self.state.FONT_SCALE, self.state.LINE_THICKNESS)[0][0]
 
-        self.state.frame = cv2.putText(self.state.frame, "SPD  {} CM/S".format(self.state.z_speed), ((self.state.CENTRE_X) - 90 - spd_size,
+        self.state.frame = cv2.putText(self.state.frame, "SPD  {} CM/S".format(int(np.hypot(self.state.x_speed, self.state.y_speed))), ((self.state.CENTRE_X) - 90 - spd_size,
                                        (self.state.CENTRE_Y) - 100), self.state.FONT, self.state.FONT_SCALE, self.state.UI_COLOUR, self.state.LINE_THICKNESS)
 
         self.state.frame = cv2.putText(self.state.frame, "ALT  {:.1f} FT".format(self.state.altitude), ((
             self.state.CENTRE_X) + 90, (self.state.CENTRE_Y) - 100), self.state.FONT, self.state.FONT_SCALE, self.state.UI_COLOUR, self.state.LINE_THICKNESS)
 
         # bottom left telemtry
+        self.state.frame = cv2.putText(self.state.frame, "PID  {}  {}  {}".format(self.state.lr_Throttle, self.state.h_Throttle, self.state.yaw_Throttle), (
+            5, self.state.FRAME_HEIGHT - 130), self.state.FONT, self.state.FONT_SCALE, self.state.UI_COLOUR, self.state.LINE_THICKNESS)
         self.state.frame = cv2.putText(self.state.frame, "BRM  {}".format(self.state.barometer),
                                        (5, self.state.FRAME_HEIGHT - 100), self.state.FONT, self.state.FONT_SCALE, self.state.UI_COLOUR, self.state.LINE_THICKNESS)
         self.state.frame = cv2.putText(self.state.frame, "SPD  {}  {}  {}".format(self.state.x_speed, self.state.y_speed, self.state.z_speed), (5,
