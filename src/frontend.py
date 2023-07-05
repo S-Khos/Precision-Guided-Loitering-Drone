@@ -47,10 +47,10 @@ class FrontEnd(object):
             self.state.CENTRE_X) + 90, (self.state.CENTRE_Y) - 100), self.state.FONT, self.state.FONT_SCALE, self.state.UI_COLOUR, self.state.LINE_THICKNESS)
 
         # bottom left telemtry
-        self.state.frame = cv2.putText(self.state.frame, "PID  {}  {}  {}".format(self.state.lr_Throttle, self.state.h_Throttle, self.state.yaw_Throttle), (
+        self.state.frame = cv2.putText(self.state.frame, "BRM  {}".format(self.state.barometer), (
             5, self.state.FRAME_HEIGHT - 130), self.state.FONT, self.state.FONT_SCALE, self.state.UI_COLOUR, self.state.LINE_THICKNESS)
-        self.state.frame = cv2.putText(self.state.frame, "BRM  {}".format(self.state.barometer),
-                                       (5, self.state.FRAME_HEIGHT - 100), self.state.FONT, self.state.FONT_SCALE, self.state.UI_COLOUR, self.state.LINE_THICKNESS)
+        self.state.frame = cv2.putText(self.state.frame, "THR  {}  {}  {}".format(self.state.lr_Throttle, self.state.h_Throttle, self.state.yaw_Throttle), (
+            5, self.state.FRAME_HEIGHT - 100), self.state.FONT, self.state.FONT_SCALE, self.state.UI_COLOUR, self.state.LINE_THICKNESS)
         self.state.frame = cv2.putText(self.state.frame, "SPD  {}  {}  {}".format(self.state.x_speed, self.state.y_speed, self.state.z_speed), (5,
                                                                                                                                                 self.state.FRAME_HEIGHT - 70), self.state.FONT, self.state.FONT_SCALE, self.state.UI_COLOUR, self.state.LINE_THICKNESS)
         self.state.frame = cv2.putText(self.state.frame, "ACC  {}  {}  {}".format(self.state.acceleration_x, self.state.acceleration_y, self.state.acceleration_z),

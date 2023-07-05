@@ -2,7 +2,6 @@ from cursor_control import CursorControl
 from key_control import KeyControl
 from tracker import Tracker
 from guidance_control import GuidanceControl
-import numpy as np
 
 
 class BackEnd(object):
