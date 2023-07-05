@@ -12,7 +12,7 @@ class State(object):
         self.CENTRE_X = int(self.FRAME_WIDTH / 2)
         self.CENTRE_Y = int(self.FRAME_HEIGHT / 2)
         self.FONT = cv2.FONT_HERSHEY_COMPLEX
-        self.FONT_SCALE = .6
+        self.FONT_SCALE = .8
         self.RED = (0, 0, 255)
         self.GREEN = (0, 255, 0)
         self.BLUE = (255, 0, 0)

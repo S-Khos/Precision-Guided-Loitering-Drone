@@ -36,7 +36,7 @@ class GuidanceControl(object):
                 self.state.h_Throttle, y_time = y_pid.update(targetY)
 
                 self.state.h_Throttle = int(
-                    self.state.h_Throttle / 2.5) if self.state.h_Throttle > 0 else self.state.h_Throttle
+                    self.state.h_Throttle / 4) if self.state.h_Throttle >= 10 and self.state.h_Throttle <= 40 else self.state.h_Throttle
 
                 self.state.fb_Throttle = int(self.state.fb_Throttle / 0.5) if self.state.h_Throttle < - \
                     20 and self.state.GS_dive else 100
