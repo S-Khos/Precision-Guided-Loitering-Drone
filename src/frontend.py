@@ -37,10 +37,10 @@ class FrontEnd(object):
                                     (self.state.CENTRE_X, self.state.CENTRE_Y + 10), self.state.UI_COLOUR, 2)
 
         # crosshair stats
-        spd_size = cv2.getTextSize("SPD  {} CM/S".format(int(np.hypot(self.state.x_speed, self.state.y_speed))),
+        spd_size = cv2.getTextSize("SPD  {:.1f} FT/S".format(np.hypot(self.state.x_speed, self.state.y_speed)),
                                    self.state.FONT, self.state.FONT_SCALE, self.state.LINE_THICKNESS)[0][0]
 
-        self.state.frame = cv2.putText(self.state.frame, "SPD  {} CM/S".format(int(np.hypot(self.state.x_speed, self.state.y_speed))), ((self.state.CENTRE_X) - 90 - spd_size,
+        self.state.frame = cv2.putText(self.state.frame, "SPD  {:.1f} FT/S".format(np.hypot(self.state.x_speed, self.state.y_speed)), ((self.state.CENTRE_X) - 90 - spd_size,
                                        (self.state.CENTRE_Y) - 100), self.state.FONT, self.state.FONT_SCALE, self.state.UI_COLOUR, self.state.LINE_THICKNESS)
 
         self.state.frame = cv2.putText(self.state.frame, "ALT  {:.1f} FT".format(self.state.altitude), ((
@@ -51,8 +51,8 @@ class FrontEnd(object):
             5, self.state.FRAME_HEIGHT - 130), self.state.FONT, self.state.FONT_SCALE, self.state.UI_COLOUR, self.state.LINE_THICKNESS)
         self.state.frame = cv2.putText(self.state.frame, "THR  {}  {}  {}".format(0, 0, 0), (
             5, self.state.FRAME_HEIGHT - 100), self.state.FONT, self.state.FONT_SCALE, self.state.UI_COLOUR, self.state.LINE_THICKNESS)
-        self.state.frame = cv2.putText(self.state.frame, "SPD  {}  {}  {}".format(self.state.x_speed, self.state.y_speed, self.state.z_speed), (5,
-                                                                                                                                                self.state.FRAME_HEIGHT - 70), self.state.FONT, self.state.FONT_SCALE, self.state.UI_COLOUR, self.state.LINE_THICKNESS)
+        self.state.frame = cv2.putText(self.state.frame, "SPD  {:.1f}  {:.1f}  {:.1f}".format(self.state.x_speed, self.state.y_speed, self.state.z_speed), (5,
+                                                                                                                                                            self.state.FRAME_HEIGHT - 70), self.state.FONT, self.state.FONT_SCALE, self.state.UI_COLOUR, self.state.LINE_THICKNESS)
         self.state.frame = cv2.putText(self.state.frame, "ACC  {}  {}  {}".format(self.state.acceleration_x, self.state.acceleration_y, self.state.acceleration_z),
                                        (5, self.state.FRAME_HEIGHT - 40), self.state.FONT, self.state.FONT_SCALE, self.state.UI_COLOUR, self.state.LINE_THICKNESS)
         self.state.frame = cv2.putText(self.state.frame, "YPR  {}  {}  {}".format(self.state.yaw, self.state.pitch, self.state.roll), (5,
@@ -114,7 +114,7 @@ class FrontEnd(object):
                 self.state.GS_lock = False
                 trk_size = cv2.getTextSize(
                     "TRK", self.state.FONT, self.state.FONT_SCALE, self.state.LINE_THICKNESS)[0][0]
-                self.state.frame = cv2.rectangle(self.state.frame, (self.state.CENTRE_X - (trk_size // 2.5), self.state.FRAME_HEIGHT - 41),
+                self.state.frame = cv2.rectangle(self.state.frame, (self.state.CENTRE_X - (trk_size // 2), self.state.FRAME_HEIGHT - 41),
                                                  (self.state.CENTRE_X + trk_size - 20, self.state.FRAME_HEIGHT - 20), self.state.UI_COLOUR, -1)
                 self.state.frame = cv2.putText(self.state.frame, "TRK", (self.state.CENTRE_X - (trk_size // 2),
                                                                          self.state.FRAME_HEIGHT - 22), self.state.FONT, self.state.FONT_SCALE, self.state.BLACK, self.state.LINE_THICKNESS)

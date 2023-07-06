@@ -13,7 +13,7 @@ def main():
     backend = BackEnd(state)
     frontend = FrontEnd(state)
     drone.connect()
-    if (drone.get_battery() > 25):
+    if (drone.get_battery() > 20):
         drone.streamon()
         frame_read = drone.get_frame_read()
         cv2.namedWindow("FEED", cv2.WINDOW_NORMAL)
