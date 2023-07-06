@@ -79,3 +79,9 @@ class State(object):
         self.yaw = int(self.state_dict['yaw'])
         self.pitch = int(self.state_dict['pitch'])
         self.roll = int(self.state_dict['roll'])
+
+    def reset_throttle(self):
+        self.fb_Throttle = 0
+        self.yaw_Throttle = 0
+        self.lr_Throttle = 0
+        self.h_Throttle = 0

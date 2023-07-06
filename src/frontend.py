@@ -49,7 +49,7 @@ class FrontEnd(object):
         # bottom left telemtry
         self.state.frame = cv2.putText(self.state.frame, "BRM  {}".format(self.state.barometer), (
             5, self.state.FRAME_HEIGHT - 130), self.state.FONT, self.state.FONT_SCALE, self.state.UI_COLOUR, self.state.LINE_THICKNESS)
-        self.state.frame = cv2.putText(self.state.frame, "THR  {}  {}  {}".format(self.state.lr_Throttle, self.state.h_Throttle, self.state.yaw_Throttle), (
+        self.state.frame = cv2.putText(self.state.frame, "THR  {}  {}  {}".format(0, 0, 0), (
             5, self.state.FRAME_HEIGHT - 100), self.state.FONT, self.state.FONT_SCALE, self.state.UI_COLOUR, self.state.LINE_THICKNESS)
         self.state.frame = cv2.putText(self.state.frame, "SPD  {}  {}  {}".format(self.state.x_speed, self.state.y_speed, self.state.z_speed), (5,
                                                                                                                                                 self.state.FRAME_HEIGHT - 70), self.state.FONT, self.state.FONT_SCALE, self.state.UI_COLOUR, self.state.LINE_THICKNESS)
@@ -71,13 +71,13 @@ class FrontEnd(object):
 
         # top center
         if (self.state.KC_manual and not self.state.GS_active):
-            self.state.frame = cv2.rectangle(self.state.frame, (self.state.CENTRE_X - 20, 10),
-                                             (self.state.CENTRE_X + 29, 28), self.state.UI_COLOUR, -1)
+            self.state.frame = cv2.rectangle(self.state.frame, (self.state.CENTRE_X - 20, 5),
+                                             (self.state.CENTRE_X + 41, 30), self.state.UI_COLOUR, -1)
             self.state.frame = cv2.putText(self.state.frame, "CTRL", (self.state.CENTRE_X - 20, 25),
                                            self.state.FONT, self.state.FONT_SCALE, self.state.BLACK, self.state.LINE_THICKNESS)
         else:
-            self.state.frame = cv2.rectangle(self.state.frame, (self.state.CENTRE_X - 20, 10),
-                                             (self.state.CENTRE_X + 31, 28), self.state.UI_COLOUR, -1)
+            self.state.frame = cv2.rectangle(self.state.frame, (self.state.CENTRE_X - 20, 5),
+                                             (self.state.CENTRE_X + 41, 30), self.state.UI_COLOUR, -1)
             self.state.frame = cv2.putText(self.state.frame, "AUTO", (self.state.CENTRE_X - 20, 25),
                                            self.state.FONT, self.state.FONT_SCALE, self.state.BLACK, self.state.LINE_THICKNESS)
 
@@ -106,7 +106,7 @@ class FrontEnd(object):
                 self.state.GS_lock = True
                 lock_size = cv2.getTextSize(
                     "LOCK", self.state.FONT, self.state.FONT_SCALE, self.state.LINE_THICKNESS)[0][0]
-                self.state.frame = cv2.rectangle(self.state.frame, (self.state.CENTRE_X - (lock_size // 2), self.state.FRAME_HEIGHT - 38),
+                self.state.frame = cv2.rectangle(self.state.frame, (self.state.CENTRE_X - (lock_size // 2.7), self.state.FRAME_HEIGHT - 41),
                                                  (self.state.CENTRE_X + lock_size - 25, self.state.FRAME_HEIGHT - 20), self.state.UI_COLOUR, -1)
                 self.state.frame = cv2.putText(self.state.frame, "LOCK", (self.state.CENTRE_X - (lock_size // 2),
                                                                           self.state.FRAME_HEIGHT - 22), self.state.FONT, self.state.FONT_SCALE, self.state.BLACK, self.state.LINE_THICKNESS)
@@ -114,27 +114,27 @@ class FrontEnd(object):
                 self.state.GS_lock = False
                 trk_size = cv2.getTextSize(
                     "TRK", self.state.FONT, self.state.FONT_SCALE, self.state.LINE_THICKNESS)[0][0]
-                self.state.frame = cv2.rectangle(self.state.frame, (self.state.CENTRE_X - (trk_size // 2), self.state.FRAME_HEIGHT - 38),
+                self.state.frame = cv2.rectangle(self.state.frame, (self.state.CENTRE_X - (trk_size // 2.5), self.state.FRAME_HEIGHT - 41),
                                                  (self.state.CENTRE_X + trk_size - 20, self.state.FRAME_HEIGHT - 20), self.state.UI_COLOUR, -1)
                 self.state.frame = cv2.putText(self.state.frame, "TRK", (self.state.CENTRE_X - (trk_size // 2),
                                                                          self.state.FRAME_HEIGHT - 22), self.state.FONT, self.state.FONT_SCALE, self.state.BLACK, self.state.LINE_THICKNESS)
 
-            self.state.frame = cv2.line(self.state.frame, (x, y), (x + 20, y),
+            self.state.frame = cv2.line(self.state.frame, (x, y), (x + ((w) // 4), y),
                                         self.state.RED if self.state.GS_lock else self.state.UI_COLOUR, 2)
-            self.state.frame = cv2.line(self.state.frame, (x, y), (x, y + 20),
+            self.state.frame = cv2.line(self.state.frame, (x, y), (x, y + ((h) // 4)),
                                         self.state.RED if self.state.GS_lock else self.state.UI_COLOUR, 2)
-            self.state.frame = cv2.line(self.state.frame, (x, y + h), (x, y + h - 20),
+            self.state.frame = cv2.line(self.state.frame, (x, y + h), (x, y + h - ((h) // 4)),
                                         self.state.RED if self.state.GS_lock else self.state.UI_COLOUR, 2)
-            self.state.frame = cv2.line(self.state.frame, (x, y + h), (x + 20, y + h),
+            self.state.frame = cv2.line(self.state.frame, (x, y + h), (x + ((w) // 4), y + h),
                                         self.state.RED if self.state.GS_lock else self.state.UI_COLOUR, 2)
 
-            self.state.frame = cv2.line(self.state.frame, (x + w, y), (x + w - 20, y),
+            self.state.frame = cv2.line(self.state.frame, (x + w, y), (x + w - ((w) // 4), y),
                                         self.state.RED if self.state.GS_lock else self.state.UI_COLOUR, 2)
-            self.state.frame = cv2.line(self.state.frame, (x + w, y), (x + w, y + 20),
+            self.state.frame = cv2.line(self.state.frame, (x + w, y), (x + w, y + ((h) // 4)),
                                         self.state.RED if self.state.GS_lock else self.state.UI_COLOUR, 2)
-            self.state.frame = cv2.line(self.state.frame, (x + w, y + h), (x + w, y + h - 20),
+            self.state.frame = cv2.line(self.state.frame, (x + w, y + h), (x + w, y + h - ((h) // 4)),
                                         self.state.RED if self.state.GS_lock else self.state.UI_COLOUR, 2)
-            self.state.frame = cv2.line(self.state.frame, (x + w, y + h), (x + w - 20, y + h),
+            self.state.frame = cv2.line(self.state.frame, (x + w, y + h), (x + w - ((w) // 4), y + h),
                                         self.state.RED if self.state.GS_lock else self.state.UI_COLOUR, 2)
 
             self.state.frame = cv2.circle(self.state.frame, (x + w // 2, y + h // 2), 3,

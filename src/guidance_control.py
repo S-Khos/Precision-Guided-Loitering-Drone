@@ -35,8 +35,8 @@ class GuidanceControl(object):
                 self.state.lr_Throttle, x_time = x_pid.update(targetX)
                 self.state.h_Throttle, y_time = y_pid.update(targetY)
 
-                self.state.h_Throttle = int(
-                    self.state.h_Throttle / 4) if self.state.h_Throttle >= 20 and self.state.h_Throttle <= 40 else self.state.h_Throttle
+                self.state.h_Throttle = int(-self.state.h_Throttle /
+                                            2) if self.state.GS_dive and self.state.h_Throttle > 0 and self.state.h_Throttle <= 40 else self.state.h_Throttle
 
                 self.state.fb_Throttle = int(self.state.fb_Throttle / 0.5) if self.state.h_Throttle < - \
                     20 and self.state.GS_dive else 100
@@ -48,10 +48,12 @@ class GuidanceControl(object):
             self.state.GS_active = False
             self.state.KC_manual = True
             self.state.drone.send_rc_control(0, 0, 0, 0)
+            self.state.reset_throttle()
             print("[GUIDANCE CONTROL] - TERMINATED")
 
         except Exception as error:
             self.state.GS_active = False
             self.state.KC_manual = True
             self.state.drone.send_rc_control(0, 0, 0, 0)
+            self.state.reset_throttle()
             print("[GUIDANCE CONTROL] - ", error)
