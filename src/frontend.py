@@ -63,6 +63,12 @@ class FrontEnd(object):
         self.state.frame = cv2.putText(self.state.frame, "T + {}".format(self.state.flight_time),
                                        (self.state.FRAME_WIDTH - time_size - 5, 55), self.state.FONT, self.state.FONT_SCALE, self.state.UI_COLOUR, self.state.LINE_THICKNESS)
 
+        if self.state.RBG:
+            flir_size = cv2.getTextSize(
+                "FLIR", self.state.FONT, self.state.FONT_SCALE, self.state.LINE_THICKNESS)[0][0]
+            self.state.frame = cv2.putText(self.state.frame, "FLIR",
+                                           (self.state.FRAME_WIDTH - flir_size - 5, 85), self.state.FONT, self.state.FONT_SCALE, self.state.UI_COLOUR, self.state.LINE_THICKNESS)
+
         # bottom compass
         self.state.frame = cv2.circle(self.state.frame, (self.state.FRAME_WIDTH - 60, self.state.FRAME_HEIGHT - 60),
                                       50, self.state.UI_COLOUR, 1)

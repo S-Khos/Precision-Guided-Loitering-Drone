@@ -5,6 +5,7 @@ import threading
 class State(object):
     def __init__(self, drone):
         self.drone = drone
+        self.RBG = True
         self.frame = None
         self.designator_frame = None
         self.FRAME_WIDTH = 960

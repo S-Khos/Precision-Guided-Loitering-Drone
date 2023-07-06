@@ -16,6 +16,9 @@ class KeyControl(object):
                 self.state.KC_manual = not self.state.KC_manual
             elif key.char == 'x':
                 self.state.GS_dive = not self.state.GS_dive
+            elif key.char == 'v':
+                self.state.RBG = not self.state.RBG
+
             if self.state.KC_manual:
                 if key.char == 'i':
                     self.state.drone.send_rc_control(0, 0, 0, 0)

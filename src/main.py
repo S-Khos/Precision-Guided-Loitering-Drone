@@ -23,7 +23,10 @@ def main():
             "FEED", backend.cursor_control.event_handler)
         while frame_read:
             state.frame = frame_read.frame
-            state.frame = cv2.cvtColor(state.frame, cv2.COLOR_BGR2RGB)
+            if state.RBG:
+                state.frame = cv2.cvtColor(state.frame, cv2.COLOR_BGR2RGB)
+            else:
+                state.frame = cv2.cvtColor(state.frame, cv2.COLOR_BGR2GRAY)
             state.designator_frame = state.frame.copy()
             state.update()
             backend.update()
