@@ -67,8 +67,8 @@ class FrontEnd(object):
 
         if not self.state.RBG:
             flir_size = cv2.getTextSize(
-                "FLIR", self.state.FONT, self.state.FONT_SCALE, self.state.LINE_THICKNESS)[0][0]
-            self.state.frame = cv2.putText(self.state.frame, "FLIR",
+                "GRAY", self.state.FONT, self.state.FONT_SCALE, self.state.LINE_THICKNESS)[0][0]
+            self.state.frame = cv2.putText(self.state.frame, "GRAY",
                                            (self.state.FRAME_WIDTH - flir_size - 5, 85), self.state.FONT, self.state.FONT_SCALE, self.state.UI_COLOUR, self.state.LINE_THICKNESS)
 
         # bottom compass
