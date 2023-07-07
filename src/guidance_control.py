@@ -10,6 +10,7 @@ class GuidanceControl(object):
         self.Y_PID = [2.0, 0, 0.5]  # 0.1, 0.3, 0.3,
         self.X_PID = [0.2, 0.02, 0.1]
         self.yaw_pivot = 50
+        self.max_h_throttle = 0
 
     def init_guidance_control(self):
         self.state.GS_thread = threading.Thread(
@@ -25,26 +26,24 @@ class GuidanceControl(object):
             x_pid = PID(self.X_PID[0], self.X_PID[1], self.X_PID[2],
                         self.state.CENTRE_X, -100, 100)
             y_pid = PID(self.Y_PID[0], self.Y_PID[1], self.Y_PID[2],
-                        self.state.CENTRE_Y, -100, 0)
+                        self.state.CENTRE_Y, -100, self.max_h_throttle)
             while self.state.TR_active and not self.state.KC_manual and self.state.TR_return:
                 x, y, w, h = int(self.state.TR_bbox[0]), int(self.state.TR_bbox[1]), int(
                     self.state.TR_bbox[2]), int(self.state.TR_bbox[3])
                 targetX = int(x + w / 2)
                 targetY = int(y + h / 2)
+                self.max_h_throttle = 100 if self.state.GS_lock else 0
                 self.state.yaw_Throttle, yaw_time = yaw_pid.update(targetX)
                 self.state.lr_Throttle, x_time = x_pid.update(targetX)
                 self.state.h_Throttle, y_time = y_pid.update(targetY)
 
-                # self.state.h_Throttle = int(-self.state.h_Throttle /
-                #                             2) if self.state.GS_dive and self.state.h_Throttle > 0 and self.state.h_Throttle <= 40 else self.state.h_Throttle
-
-                self.state.fb_Throttle = int(self.state.fb_Throttle / 0.5) if self.state.h_Throttle < - \
-                    20 and self.state.GS_dive else 100
+                self.state.fb_Throttle = int(self.state.fb_Throttle / 0.5) if self.state.h_Throttle <= - \
+                    0 and self.state.GS_dive else 100
 
                 if self.state.drone.send_rc_control:
                     self.state.drone.send_rc_control(-self.state.lr_Throttle if abs(-self.state.lr_Throttle) >= self.yaw_pivot else 0, self.state.fb_Throttle if self.state.altitude >
                                                      1.3 and self.state.GS_dive else 0, self.state.h_Throttle if self.state.GS_dive else 0, -self.state.yaw_Throttle if abs(-self.state.yaw_Throttle) < self.yaw_pivot else 0)
-                time.sleep(0.014)
+                time.sleep(0.016)
             self.state.GS_active = False
             self.state.KC_manual = True
             self.state.drone.send_rc_control(0, 0, 0, 0)

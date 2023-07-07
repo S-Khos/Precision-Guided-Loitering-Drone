@@ -51,7 +51,7 @@ class FrontEnd(object):
         # bottom left telemtry
         self.state.frame = cv2.putText(self.state.frame, "BRM  {}".format(self.state.barometer), (
             5, self.state.FRAME_HEIGHT - 130), self.state.FONT, self.state.FONT_SCALE, self.state.UI_COLOUR, self.state.LINE_THICKNESS)
-        self.state.frame = cv2.putText(self.state.frame, "THR  {}  {}  {}".format(0, 0, 0), (
+        self.state.frame = cv2.putText(self.state.frame, "THR  {}  {}  {}".format(self.state.yaw_Throttle, self.state.lr_Throttle, 0), (
             5, self.state.FRAME_HEIGHT - 100), self.state.FONT, self.state.FONT_SCALE, self.state.UI_COLOUR, self.state.LINE_THICKNESS)
         self.state.frame = cv2.putText(self.state.frame, "SPD  {:.1f}  {:.1f}  {:.1f}".format(self.state.x_speed, self.state.y_speed, self.state.z_speed), (5,
                                                                                                                                                             self.state.FRAME_HEIGHT - 70), self.state.FONT, self.state.FONT_SCALE, self.state.UI_COLOUR, self.state.LINE_THICKNESS)
@@ -80,12 +80,12 @@ class FrontEnd(object):
         # top center
         if (self.state.KC_manual and not self.state.GS_active):
             self.state.frame = cv2.rectangle(self.state.frame, (self.state.CENTRE_X - 20, 5),
-                                             (self.state.CENTRE_X + 43, 30), self.state.UI_COLOUR, -1)
+                                             (self.state.CENTRE_X + 48, 30), self.state.UI_COLOUR, -1)
             self.state.frame = cv2.putText(self.state.frame, "CTRL", (self.state.CENTRE_X - 20, 25),
                                            self.state.FONT, self.state.FONT_SCALE, self.state.BLACK, self.state.LINE_THICKNESS)
         else:
             self.state.frame = cv2.rectangle(self.state.frame, (self.state.CENTRE_X - 20, 5),
-                                             (self.state.CENTRE_X + 44, 30), self.state.UI_COLOUR, -1)
+                                             (self.state.CENTRE_X + 48, 30), self.state.UI_COLOUR, -1)
             self.state.frame = cv2.putText(self.state.frame, "AUTO", (self.state.CENTRE_X - 20, 25),
                                            self.state.FONT, self.state.FONT_SCALE, self.state.BLACK, self.state.LINE_THICKNESS)
 
@@ -110,6 +110,17 @@ class FrontEnd(object):
         if self.state.TR_active and self.state.TR_return:
             x, y, w, h = int(self.state.TR_bbox[0]), int(self.state.TR_bbox[1]), int(
                 self.state.TR_bbox[2]), int(self.state.TR_bbox[3])
+
+            if self.state.GS_dive:
+                dive_size = cv2.getTextSize(
+                    "DIVE", self.state.FONT, self.state.FONT_SCALE, self.state.LINE_THICKNESS)[0][0]
+
+                self.state.frame = cv2.rectangle(self.state.frame, (self.state.CENTRE_X - (dive_size // 2), self.state.FRAME_HEIGHT - 80),
+                                                 (self.state.CENTRE_X + dive_size - 17, self.state.FRAME_HEIGHT - 54), self.state.UI_COLOUR, -1)
+
+                self.state.frame = cv2.putText(self.state.frame, "DIVE", (self.state.CENTRE_X - (dive_size // 2),
+                                                                          self.state.FRAME_HEIGHT - 80), self.state.FONT, self.state.FONT_SCALE, self.state.BLACK, self.state.LINE_THICKNESS)
+
             if (self.state.CENTRE_X > x and self.state.CENTRE_X < x + w and self.state.CENTRE_Y > y and self.state.CENTRE_Y < y + h and self.state.GS_dive):
                 self.state.GS_lock = True
 
@@ -125,7 +136,7 @@ class FrontEnd(object):
                 trk_size = cv2.getTextSize(
                     "TRK", self.state.FONT, self.state.FONT_SCALE, self.state.LINE_THICKNESS)[0][0]
                 self.state.frame = cv2.rectangle(self.state.frame, (self.state.CENTRE_X - (trk_size // 2), self.state.FRAME_HEIGHT - 41),
-                                                 (self.state.CENTRE_X + trk_size - 18, self.state.FRAME_HEIGHT - 20), self.state.UI_COLOUR, -1)
+                                                 (self.state.CENTRE_X + trk_size - 27, self.state.FRAME_HEIGHT - 20), self.state.UI_COLOUR, -1)
                 self.state.frame = cv2.putText(self.state.frame, "TRK", (self.state.CENTRE_X - (trk_size // 2),
                                                                          self.state.FRAME_HEIGHT - 22), self.state.FONT, self.state.FONT_SCALE, self.state.BLACK, self.state.LINE_THICKNESS)
 

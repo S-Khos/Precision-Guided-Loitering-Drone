@@ -13,7 +13,10 @@ class KeyControl(object):
     def on_key_press(self, key):
         try:
             if key.char == 'z':
-                self.state.KC_manual = not self.state.KC_manual
+                if self.state.KC_manual and self.state.TR_active:
+                    self.state.KC_manual = False
+                else:
+                    self.state.KC_manual = True
             elif key.char == 'x':
                 self.state.GS_dive = not self.state.GS_dive
             elif key.char == 'v':
