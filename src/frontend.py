@@ -11,6 +11,8 @@ class FrontEnd(object):
         self.fps_init_time = time.time()
 
     def update(self):
+
+        self.state.UI_COLOUR = self.state.GREEN if self.state.RBG else self.state.WHITE
         # fps
         elapsed_time = time.time() - self.fps_init_time
         fps = int(1 / elapsed_time)
@@ -63,7 +65,7 @@ class FrontEnd(object):
         self.state.frame = cv2.putText(self.state.frame, "T + {}".format(self.state.flight_time),
                                        (self.state.FRAME_WIDTH - time_size - 5, 55), self.state.FONT, self.state.FONT_SCALE, self.state.UI_COLOUR, self.state.LINE_THICKNESS)
 
-        if self.state.RBG:
+        if not self.state.RBG:
             flir_size = cv2.getTextSize(
                 "FLIR", self.state.FONT, self.state.FONT_SCALE, self.state.LINE_THICKNESS)[0][0]
             self.state.frame = cv2.putText(self.state.frame, "FLIR",
@@ -78,12 +80,12 @@ class FrontEnd(object):
         # top center
         if (self.state.KC_manual and not self.state.GS_active):
             self.state.frame = cv2.rectangle(self.state.frame, (self.state.CENTRE_X - 20, 5),
-                                             (self.state.CENTRE_X + 41, 30), self.state.UI_COLOUR, -1)
+                                             (self.state.CENTRE_X + 43, 30), self.state.UI_COLOUR, -1)
             self.state.frame = cv2.putText(self.state.frame, "CTRL", (self.state.CENTRE_X - 20, 25),
                                            self.state.FONT, self.state.FONT_SCALE, self.state.BLACK, self.state.LINE_THICKNESS)
         else:
             self.state.frame = cv2.rectangle(self.state.frame, (self.state.CENTRE_X - 20, 5),
-                                             (self.state.CENTRE_X + 41, 30), self.state.UI_COLOUR, -1)
+                                             (self.state.CENTRE_X + 44, 30), self.state.UI_COLOUR, -1)
             self.state.frame = cv2.putText(self.state.frame, "AUTO", (self.state.CENTRE_X - 20, 25),
                                            self.state.FONT, self.state.FONT_SCALE, self.state.BLACK, self.state.LINE_THICKNESS)
 
@@ -110,10 +112,12 @@ class FrontEnd(object):
                 self.state.TR_bbox[2]), int(self.state.TR_bbox[3])
             if (self.state.CENTRE_X > x and self.state.CENTRE_X < x + w and self.state.CENTRE_Y > y and self.state.CENTRE_Y < y + h and self.state.GS_dive):
                 self.state.GS_lock = True
+
                 lock_size = cv2.getTextSize(
                     "LOCK", self.state.FONT, self.state.FONT_SCALE, self.state.LINE_THICKNESS)[0][0]
-                self.state.frame = cv2.rectangle(self.state.frame, (self.state.CENTRE_X - (lock_size // 2.7), self.state.FRAME_HEIGHT - 41),
-                                                 (self.state.CENTRE_X + lock_size - 25, self.state.FRAME_HEIGHT - 20), self.state.UI_COLOUR, -1)
+                self.state.frame = cv2.rectangle(self.state.frame, (self.state.CENTRE_X - (lock_size // 2), self.state.FRAME_HEIGHT - 43),
+                                                 (self.state.CENTRE_X + lock_size - 22, self.state.FRAME_HEIGHT - 17), self.state.UI_COLOUR, -1)
+
                 self.state.frame = cv2.putText(self.state.frame, "LOCK", (self.state.CENTRE_X - (lock_size // 2),
                                                                           self.state.FRAME_HEIGHT - 22), self.state.FONT, self.state.FONT_SCALE, self.state.BLACK, self.state.LINE_THICKNESS)
             else:
@@ -121,7 +125,7 @@ class FrontEnd(object):
                 trk_size = cv2.getTextSize(
                     "TRK", self.state.FONT, self.state.FONT_SCALE, self.state.LINE_THICKNESS)[0][0]
                 self.state.frame = cv2.rectangle(self.state.frame, (self.state.CENTRE_X - (trk_size // 2), self.state.FRAME_HEIGHT - 41),
-                                                 (self.state.CENTRE_X + trk_size - 20, self.state.FRAME_HEIGHT - 20), self.state.UI_COLOUR, -1)
+                                                 (self.state.CENTRE_X + trk_size - 18, self.state.FRAME_HEIGHT - 20), self.state.UI_COLOUR, -1)
                 self.state.frame = cv2.putText(self.state.frame, "TRK", (self.state.CENTRE_X - (trk_size // 2),
                                                                          self.state.FRAME_HEIGHT - 22), self.state.FONT, self.state.FONT_SCALE, self.state.BLACK, self.state.LINE_THICKNESS)
 

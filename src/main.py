@@ -13,7 +13,7 @@ def main():
     backend = BackEnd(state)
     frontend = FrontEnd(state)
     drone.connect()
-    if (drone.get_battery() > 20):
+    if (drone.get_battery() > 25):
         drone.streamon()
         frame_read = drone.get_frame_read()
         cv2.namedWindow("FEED", cv2.WINDOW_NORMAL)
@@ -23,11 +23,9 @@ def main():
             "FEED", backend.cursor_control.event_handler)
         while frame_read:
             state.frame = frame_read.frame
-            if state.RBG:
-                state.frame = cv2.cvtColor(state.frame, cv2.COLOR_BGR2RGB)
-            else:
-                state.frame = cv2.cvtColor(state.frame, cv2.COLOR_BGR2GRAY)
             state.designator_frame = state.frame.copy()
+            state.frame = cv2.cvtColor(state.frame, cv2.COLOR_BGR2RGB) if state.RBG else cv2.cvtColor(
+                state.frame, cv2.COLOR_BGR2GRAY)
             state.update()
             backend.update()
             frontend.update()
