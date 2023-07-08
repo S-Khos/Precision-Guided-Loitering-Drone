@@ -11,7 +11,6 @@ class FrontEnd(object):
         self.fps_init_time = time.time()
 
     def update(self):
-
         self.state.UI_COLOUR = self.state.GREEN if self.state.RBG else self.state.WHITE
         # fps
         elapsed_time = time.time() - self.fps_init_time
@@ -41,17 +40,20 @@ class FrontEnd(object):
         # crosshair stats
         spd_size = cv2.getTextSize("SPD  {:.1f} FT/S".format(np.hypot(self.state.x_speed, self.state.y_speed)),
                                    self.state.FONT, self.state.FONT_SCALE, self.state.LINE_THICKNESS)[0][0]
-        self.state.frame = cv2.putText(self.state.frame, "SPD  {:.1f} FT/S".format(np.hypot(self.state.x_speed, self.state.y_speed)), ((self.state.CENTRE_X) - 90 - spd_size,
+        self.state.frame = cv2.putText(self.state.frame, "SPD  {:.1f} FT/S".format(np.hypot(self.state.x_speed, self.state.y_speed)), ((self.state.CENTRE_X) - 140 - spd_size + spd_size // 2,
                                        (self.state.CENTRE_Y) - 100), self.state.FONT, self.state.FONT_SCALE, self.state.UI_COLOUR, self.state.LINE_THICKNESS)
 
+        alt_size = cv2.getTextSize("ALT  {:.1f} FT".format(self.state.altitude),
+                                   self.state.FONT, self.state.FONT_SCALE, self.state.LINE_THICKNESS)[0][0]
+
         self.state.frame = cv2.putText(self.state.frame, "ALT  {:.1f} FT".format(self.state.altitude), ((
-            self.state.CENTRE_X) + 90, (self.state.CENTRE_Y) - 100), self.state.FONT, self.state.FONT_SCALE, self.state.UI_COLOUR, self.state.LINE_THICKNESS)
+            self.state.CENTRE_X) + 130 - alt_size + alt_size // 2, (self.state.CENTRE_Y) - 100), self.state.FONT, self.state.FONT_SCALE, self.state.UI_COLOUR, self.state.LINE_THICKNESS)
 
         if not self.state.RBG:
             flir_size = cv2.getTextSize(
                 "GRAY", self.state.FONT, self.state.FONT_SCALE, self.state.LINE_THICKNESS)[0][0]
             self.state.frame = cv2.putText(self.state.frame, "GRAY",
-                                           ((self.state.CENTRE_X) - 90 - flir_size,
+                                           ((self.state.CENTRE_X) - 140 - flir_size + flir_size // 2,
                                             (self.state.CENTRE_Y) + 100), self.state.FONT, self.state.FONT_SCALE, self.state.UI_COLOUR, self.state.LINE_THICKNESS)
 
         # bottom left telemtry
@@ -115,7 +117,7 @@ class FrontEnd(object):
                 dive_size = cv2.getTextSize(
                     "DIVE", self.state.FONT, self.state.FONT_SCALE, self.state.LINE_THICKNESS)[0][0]
 
-                self.state.frame = cv2.rectangle(self.state.frame, (self.state.CENTRE_X - (dive_size // 2), self.state.FRAME_HEIGHT - 64),
+                self.state.frame = cv2.rectangle(self.state.frame, (self.state.CENTRE_X - (dive_size // 2), self.state.FRAME_HEIGHT - 74),
                                                  (self.state.CENTRE_X + dive_size - 25, self.state.FRAME_HEIGHT - 53), self.state.UI_COLOUR, -1)
 
                 self.state.frame = cv2.putText(self.state.frame, "DIVE", (self.state.CENTRE_X - (dive_size // 2),
