@@ -11,6 +11,7 @@ class GuidanceControl(object):
         self.X_PID = [0.2, 0.02, 0.1]
         self.yaw_pivot = 50
         self.max_h_throttle = 0
+        self.switch_yaw = False
 
     def init_guidance_control(self):
         self.state.GS_thread = threading.Thread(
@@ -37,12 +38,17 @@ class GuidanceControl(object):
                 self.state.lr_Throttle, x_time = x_pid.update(targetX)
                 self.state.h_Throttle, y_time = y_pid.update(targetY)
 
+                # h_throttle should not be positive when drone is diving unless it is locked (maybe)
+
                 self.state.fb_Throttle = int(self.state.fb_Throttle / 0.5) if self.state.h_Throttle <= - \
                     0 and self.state.GS_dive else 100
 
+                self.switch_yaw = True if abs(
+                    -self.state.lr_Throttle) >= self.yaw_pivot else False
+
                 if self.state.drone.send_rc_control:
-                    self.state.drone.send_rc_control(-self.state.lr_Throttle if abs(-self.state.lr_Throttle) >= self.yaw_pivot else 0, self.state.fb_Throttle if self.state.altitude >
-                                                     1.3 and self.state.GS_dive else 0, self.state.h_Throttle if self.state.GS_dive else 0, -self.state.yaw_Throttle if abs(-self.state.yaw_Throttle) < self.yaw_pivot else 0)
+                    self.state.drone.send_rc_control(-self.state.lr_Throttle if self.switch_yaw else 0, self.state.fb_Throttle if self.state.altitude >
+                                                     1.3 and self.state.GS_dive else 0, self.state.h_Throttle if self.state.GS_dive else 0, -self.state.yaw_Throttle if not self.switch_yaw else 0)
                 time.sleep(0.0145)
             self.state.GS_active = False
             self.state.KC_manual = True
