@@ -50,17 +50,13 @@ class GuidanceControl(object):
                     self.state.drone.send_rc_control(-self.state.lr_Throttle if self.switch_yaw else 0, self.state.fb_Throttle if self.state.altitude >
                                                      1.3 and self.state.GS_dive else 0, self.state.h_Throttle if self.state.GS_dive else 0, -self.state.yaw_Throttle if not self.switch_yaw else 0)
                 time.sleep(0.0145)
-            self.state.GS_active = False
-            self.state.KC_manual = True
-            self.state.GS_dive = False
-            self.state.drone.send_rc_control(0, 0, 0, 0)
-            self.state.reset_throttle()
-            print("[GUIDANCE CONTROL] - TERMINATED")
 
         except Exception as error:
-            self.state.GS_active = False
-            self.state.KC_manual = True
-            self.state.GS_dive = False
-            self.state.drone.send_rc_control(0, 0, 0, 0)
-            self.state.reset_throttle()
             print("[GUIDANCE CONTROL] - ", error)
+
+        self.state.GS_active = False
+        self.state.KC_manual = True
+        self.state.GS_dive = False
+        self.state.drone.send_rc_control(0, 0, 0, 0)
+        self.state.reset_throttle()
+        print("[GUIDANCE CONTROL] - TERMINATED")
