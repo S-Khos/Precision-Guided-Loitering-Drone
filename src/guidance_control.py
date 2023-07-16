@@ -27,7 +27,7 @@ class GuidanceControl(object):
             x_pid = PID(self.X_PID[0], self.X_PID[1], self.X_PID[2],
                         self.state.CENTRE_X, -100, 100)
             y_pid = PID(self.Y_PID[0], self.Y_PID[1], self.Y_PID[2],
-                        self.state.CENTRE_Y, -100, self.max_h_throttle)
+                        self.state.CENTRE_Y, -60, self.max_h_throttle)
             while self.state.TR_active and not self.state.KC_manual and self.state.TR_return:
                 x, y, w, h = int(self.state.TR_bbox[0]), int(self.state.TR_bbox[1]), int(
                     self.state.TR_bbox[2]), int(self.state.TR_bbox[3])
@@ -36,7 +36,7 @@ class GuidanceControl(object):
                 self.max_h_throttle = 100 if self.state.GS_lock else 0
                 self.state.yaw_Throttle, yaw_time = yaw_pid.update(targetX)
                 self.state.lr_Throttle, x_time = x_pid.update(targetX)
-                self.state.h_Throttle, y_time = y_pid.update(targetY)
+                self.state.h_Throttle, y_time = y_pid.update(targetY - 50)
 
                 # h_throttle should not be positive when drone is diving unless it is locked (maybe)
 
