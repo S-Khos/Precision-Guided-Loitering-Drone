@@ -27,6 +27,10 @@ class FrontEnd(object):
         self.state.frame = cv2.putText(self.state.frame, "TMP  {}C".format(self.state.temperature),
                                        (5, 55), self.state.FONT, self.state.FONT_SCALE, self.state.UI_COLOUR, self.state.LINE_THICKNESS)
 
+        # target line
+        self.state.frame = cv2.line(self.state.frame, (self.state.CENTRE_X - 100, self.state.CENTRE_Y - 200),
+                                    (self.state.CENTRE_X + 100, self.state.CENTRE_Y - 200), self.state.RED, 3)
+
         # crosshair
         self.state.frame = cv2.line(self.state.frame, (self.state.CENTRE_X - 20, self.state.CENTRE_Y),
                                     (self.state.CENTRE_X - 10, self.state.CENTRE_Y), self.state.UI_COLOUR, 2)
