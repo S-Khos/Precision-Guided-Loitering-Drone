@@ -22,8 +22,8 @@ class TelloException(Exception):
 
 @enforce_types
 class Tello:
-    RESPONSE_TIMEOUT = 4  # in seconds
-    TAKEOFF_TIMEOUT = 10  # in seconds
+    RESPONSE_TIMEOUT = 3  # in seconds
+    TAKEOFF_TIMEOUT = 5  # in seconds
     FRAME_GRAB_TIMEOUT = 4
     TIME_BTW_COMMANDS = 0  # in seconds
     TIME_BTW_RC_CONTROL_COMMANDS = 0  # in seconds

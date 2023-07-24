@@ -42,9 +42,9 @@ class KeyControl(object):
                 elif key.char == 'e':
                     self.state.drone.rotate_clockwise(45)
                 elif key.char == 'r':
-                    self.state.drone.move_up(self.state.KC_default_dist)
+                    self.state.drone.move_up(100)
                 elif key.char == 'f':
-                    self.state.drone.move_down(self.state.KC_default_dist)
+                    self.state.drone.move_down(50)
                 elif key.char == ']':
                     self.state.KC_designator_roi_size[0] += self.state.KC_designator_delta
                     self.state.KC_designator_roi_size[1] += self.state.KC_designator_delta

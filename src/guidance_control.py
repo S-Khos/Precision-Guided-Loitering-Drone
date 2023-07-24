@@ -27,7 +27,8 @@ class GuidanceControl(object):
             x_pid = PID(self.X_PID[0], self.X_PID[1], self.X_PID[2],
                         self.state.CENTRE_X, -100, 100)
             y_pid = PID(self.Y_PID[0], self.Y_PID[1], self.Y_PID[2],
-                        self.state.CENTRE_Y - 200, -100, self.max_h_throttle)
+                        self.state.CENTRE_Y - 100, -100, self.max_h_throttle)
+
             while self.state.TR_active and not self.state.KC_manual and self.state.TR_return:
                 x, y, w, h = int(self.state.TR_bbox[0]), int(self.state.TR_bbox[1]), int(
                     self.state.TR_bbox[2]), int(self.state.TR_bbox[3])
@@ -39,15 +40,15 @@ class GuidanceControl(object):
                 self.state.lr_Throttle, x_time = x_pid.update(targetX)
                 self.state.h_Throttle, y_time = y_pid.update(targetY)
 
-                self.state.fb_Throttle = 40 if self.state.h_Throttle < -80 else 90
+                self.state.fb_Throttle = 80
 
                 self.switch_yaw = True if abs(
-                    -self.state.lr_Throttle) >= self.yaw_pivot else False
+                    -self.state.lr_Throttle) >= self.yaw_pivot and self.state.GS_dive else False
 
                 if self.state.drone.send_rc_control:
                     self.state.drone.send_rc_control(-self.state.lr_Throttle if self.switch_yaw else 0, self.state.fb_Throttle if self.state.altitude >
-                                                     1.3 and self.state.GS_dive else 0, self.state.h_Throttle if self.state.GS_dive else 0, -self.state.yaw_Throttle if not self.switch_yaw else 0)
-                time.sleep(0.0145)
+                                                     2.5 and self.state.GS_dive else 0, self.state.h_Throttle if self.state.GS_dive else 0, -self.state.yaw_Throttle if not self.switch_yaw else 0)
+                time.sleep(0.014)
 
         except Exception as error:
             print("[GUIDANCE CONTROL] - ", error)

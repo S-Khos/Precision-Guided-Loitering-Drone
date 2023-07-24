@@ -26,7 +26,7 @@ def main():
             state.designator_frame = state.frame.copy()
             state.frame = cv2.cvtColor(state.frame, cv2.COLOR_BGR2RGB) if state.RBG else cv2.cvtColor(
                 state.frame, cv2.COLOR_BGR2GRAY)
-            state.update()
+            state.update()  
             backend.update()
             frontend.update()
             cv2.imshow("FEED", state.frame)
